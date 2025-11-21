@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Ophthalmoscope Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #4b5563;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900">
+    <div id="app" class="h-screen flex">
+        <!-- Control Panel -->
+        <div class="w-80 bg-gray-800 p-4 border-r border-gray-700 overflow-y-auto">
+            <div class="flex items-center gap-2 mb-6">
+                <svg class="text-blue-400" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <h1 class="text-xl font-bold text-white">Direct Ophthalmoscope</h1>
+            </div>
+
+            <!-- Power Button -->
+            <div class="mb-6 p-4 bg-gray-700 rounded-lg">
+                <button id="powerBtn" class="w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/>
+                    </svg>
+                    <span>POWER OFF</span>
+                </button>
+            </div>
+
+            <!-- Image Navigation -->
+            <div class="mb-4 p-4 bg-gray-700 rounded-lg">
+                <label class="text-white text-sm font-semibold mb-2 block">
+                    Condition: <span id="conditionName">Normal/Healthy Fundus</span>
+                </label>
+                <div class="flex items-center justify-between mb-3">
+                    <button id="prevBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m15 18-6-6 6-6"/>
+                        </svg>
+                    </button>
+                    <span class="text-white font-mono" id="imageCounter">Image 1 / 10</span>
+                    <button id="nextBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m9 18 6-6-6-6"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-gray-300 text-xs">
+                    Healthy retina with clear optic disc, intact blood vessels, and normal macula. No signs of pathology.
+                </p>
+            </div>
+
+            <!-- Distance Control -->
+            <div class="mb-4">
+                <label class="text-white text-sm font-semibold mb-2 block">
+                    Distance from Eye: <span id="distanceValue">3.0</span> cm
+                </label>
+                <input type="range" id="distance" min="1" max="12" step="0.5" value="3" class="w-full">
+                <div class="text-xs text-gray-400 mt-1" id="distanceHint">Good distance</div>
+            </div>
+
+            <!-- Diopter Wheel -->
+            <div class="mb-4">
+                <label class="text-white text-sm font-semibold mb-2 block">
+                    Diopter Wheel: <span id="diopterValue">0</span>
+                </label>
+                <input type="range" id="diopter" min="-20" max="20" step="1" value="0" class="w-full">
+                <div class="text-xs text-gray-400 mt-1">Adjust for patient's refractive error</div>
+            </div>
+
+            <!-- Light Intensity -->
+            <div class="mb-4">
+                <label class="text-white text-sm font-semibold mb-2 flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                        <path d="M12 4v1M17.66 6.34l-.71.71M20 12h-1M17.66 17.66l-.71-.71M12 19v1M6.34 17.66l.71-.71M4 12h1M6.34 6.34l.71.71"/>
+                    </svg>
+                    Light Intensity: <span id="brightnessValue">80</span>%
+                </label>
+                <input type="range" id="brightness" min="30" max="120" step="5" value="80" class="w-full">
+            </div>
+
+            <!-- Aperture Selection -->
+            <div class="mb-4">
+                <label class="text-white text-sm font-semibold mb-2 block">Aperture Selection</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-gray-600 text-gray-300 hover:bg-gray-500" data-aperture="small">Small</button>
+                    <button class="aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-blue-600 text-white" data-aperture="medium">Medium</button>
+                    <button class="aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-gray-600 text-gray-300 hover:bg-gray-500" data-aperture="large">Large</button>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="space-y-2 mb-4">
+                <button id="infoBtn" class="w-full px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition flex items-center justify-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    Hide Info Overlay
+                </button>
+                <button id="resetBtn" class="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                        <path d="M16 16h5v5"/>
+                    </svg>
+                    Reset View
+                </button>
+            </div>
+
+            <!-- Instructions -->
+            <div class="p-3 bg-gray-700 rounded-lg">
+                <h3 class="text-white font-semibold text-sm mb-2">Instructions:</h3>
+                <ul class="text-gray-300 text-xs space-y-1">
+                    <li>• Turn on power first</li>
+                    <li>• Keep distance at 2-6 cm</li>
+                    <li>• Drag to pan across fundus</li>
+                    <li>• Use arrows to switch images</li>
+                    <li>• Adjust diopter for focus</li>
+                    <li>• Change aperture for field of view</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="flex-1 flex flex-col items-center justify-center bg-black p-8">
+            <canvas id="canvas" width="600" height="600" class="border-4 border-gray-700 rounded-lg cursor-default"></canvas>
+            <div class="mt-4 text-gray-400 text-sm text-center max-w-md" id="statusText">
+                Turn on the ophthalmoscope to begin examination
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            isOn: false,
+            currentImageIndex: 0,
+            aperture: 'medium',
+            diopter: 0,
+            brightness: 80,
+            distance: 3,
+            viewAngle: { x: 0, y: 0 },
+            showInfo: true,
+            isDragging: false,
+            lastMouse: { x: 0, y: 0 },
+            loadedImages: {},
+            imageErrors: {}
+        };
+
+        const imageUrls = [
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9644-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9647-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9649-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa964a-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa964b-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa964c-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9651-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9652-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9654-8d87-11e8-9daf-6045cb817f5b..JPG',
+            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9655-8d87-11e8-9daf-6045cb817f5b..JPG'
+        ];
+
+        const apertureSettings = {
+            small: { size: 100 },
+            medium: { size: 150 },
+            large: { size: 220 }
+        };
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Load current image
+        function loadCurrentImage() {
+            const url = imageUrls[state.currentImageIndex];
+            if (state.loadedImages[url] || state.imageErrors[url]) {
+                draw();
+                return;
+            }
+
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                state.loadedImages[url] = img;
+                draw();
+            };
+            img.onerror = () => {
+                console.error('Failed to load:', url);
+                state.imageErrors[url] = true;
+                draw();
+            };
+            img.src = url;
+        }
+
+        function calculateFOV() {
+            const baseSize = apertureSettings[state.aperture].size;
+            return baseSize / (state.distance * 0.25);
+        }
+
+        function calculateFocus() {
+            const optimalDiopter = (state.distance - 3) * 2;
+            const focusError = Math.abs(state.diopter - optimalDiopter);
+            return Math.max(0, 1 - focusError / 15);
+        }
+
+        function draw() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            if (!state.isOn) {
+                ctx.fillStyle = '#666';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Ophthalmoscope OFF', centerX, centerY);
+                ctx.font = '16px Arial';
+                ctx.fillText('Turn on the power to begin examination', centerX, centerY + 40);
+                return;
+            }
+
+            const fov = calculateFOV();
+            const focus = calculateFocus();
+
+            if (state.distance > 8) {
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, fov);
+                gradient.addColorStop(0, 'rgb(255, 80, 50)');
+                gradient.addColorStop(0.6, 'rgb(200, 40, 20)');
+                gradient.addColorStop(1, 'rgb(0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Red Reflex - Move closer to see fundus details', centerX, height - 30);
+                return;
+            }
+
+            const url = imageUrls[state.currentImageIndex];
+            const img = state.loadedImages[url];
+            const hasError = state.imageErrors[url];
+
+            if (hasError) {
+                ctx.fillStyle = '#664444';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Failed to load image', centerX, centerY);
+                return;
+            }
+
+            if (!img) {
+                ctx.fillStyle = '#444';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Loading fundus image...', centerX, centerY);
+                return;
+            }
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+            ctx.clip();
+
+            const brightnessValue = state.brightness / 80;
+            const blurAmount = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
+            ctx.filter = blurAmount > 0 ? `brightness(${brightnessValue}) blur(${blurAmount}px)` : `brightness(${brightnessValue})`;
+
+            const scale = 2.0;
+            const imgWidth = img.width * scale;
+            const imgHeight = img.height * scale;
+            const offsetX = centerX - imgWidth / 2 - state.viewAngle.x * 4;
+            const offsetY = centerY - imgHeight / 2 - state.viewAngle.y * 4;
+
+            ctx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
+            ctx.filter = 'none';
+            ctx.restore();
+
+            const vignetteGrad = ctx.createRadialGradient(centerX, centerY, fov * 0.75, centerX, centerY, fov);
+            vignetteGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            vignetteGrad.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = vignetteGrad;
+            ctx.fillRect(0, 0, width, height);
+            ctx.restore();
+
+            if (state.showInfo) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(10, 10, 250, 110);
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px monospace';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`Focus: ${focus < 0.7 ? 'Poor' : focus < 0.9 ? 'Fair' : 'Sharp'}`, 20, 30);
+                ctx.fillText(`Distance: ${state.distance.toFixed(1)} cm`, 20, 50);
+                ctx.fillText(`Diopter: ${state.diopter > 0 ? '+' : ''}${state.diopter}`, 20, 70);
+                ctx.fillText(`Pan: X=${state.viewAngle.x.toFixed(0)} Y=${state.viewAngle.y.toFixed(0)}`, 20, 90);
+                ctx.fillText(`Field: ${state.aperture}`, 20, 110);
+            }
+
+            if (focus < 0.7) {
+                ctx.fillStyle = 'rgba(200, 50, 50, 0.9)';
+                ctx.fillRect(width / 2 - 120, height - 50, 240, 35);
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Adjust diopter wheel for sharp focus', centerX, height - 32);
+            }
+        }
+
+        // Event Handlers
+        document.getElementById('powerBtn').addEventListener('click', () => {
+            state.isOn = !state.isOn;
+            const btn = document.getElementById('powerBtn');
+            btn.className = `w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${state.isOn ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white`;
+            btn.querySelector('span').textContent = state.isOn ? 'POWER ON' : 'POWER OFF';
+            canvas.style.cursor = state.isOn && state.distance <= 8 ? 'move' : 'default';
+            document.getElementById('prevBtn').disabled = !state.isOn;
+            document.getElementById('nextBtn').disabled = !state.isOn;
+            updateStatusText();
+            if (state.isOn) loadCurrentImage();
+            else draw();
+        });
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            state.currentImageIndex = state.currentImageIndex > 0 ? state.currentImageIndex - 1 : imageUrls.length - 1;
+            state.viewAngle = { x: 0, y: 0 };
+            document.getElementById('imageCounter').textContent = `Image ${state.currentImageIndex + 1} / ${imageUrls.length}`;
+            loadCurrentImage();
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            state.currentImageIndex = state.currentImageIndex < imageUrls.length - 1 ? state.currentImageIndex + 1 : 0;
+            state.viewAngle = { x: 0, y: 0 };
+            document.getElementById('imageCounter').textContent = `Image ${state.currentImageIndex + 1} / ${imageUrls.length}`;
+            loadCurrentImage();
+        });
+
+        document.getElementById('distance').addEventListener('input', (e) => {
+            state.distance = parseFloat(e.target.value);
+            document.getElementById('distanceValue').textContent = state.distance.toFixed(1);
+            const hint = state.distance > 8 ? 'Too far - red reflex only' : state.distance < 2 ? 'Too close' : 'Good distance';
+            document.getElementById('distanceHint').textContent = hint;
+            canvas.style.cursor = state.isOn && state.distance <= 8 ? 'move' : 'default';
+            updateStatusText();
+            draw();
+        });
+
+        document.getElementById('diopter').addEventListener('input', (e) => {
+            state.diopter = parseInt(e.target.value);
+            document.getElementById('diopterValue').textContent = state.diopter > 0 ? `+${state.diopter}` : state.diopter;
+            draw();
+        });
+
+        document.getElementById('brightness').addEventListener('input', (e) => {
+            state.brightness = parseInt(e.target.value);
+            document.getElementById('brightnessValue').textContent = state.brightness;
+            draw();
+        });
+
+        document.querySelectorAll('.aperture-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!state.isOn) return;
+                state.aperture = btn.dataset.aperture;
+                document.querySelectorAll('.aperture-btn').forEach(b => {
+                    b.className = 'aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-gray-600 text-gray-300 hover:bg-gray-500';
+                });
+                btn.className = 'aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-blue-600 text-white';
+                draw();
+            });
+        });
+
+        document.getElementById('infoBtn').addEventListener('click', () => {
+            state.showInfo = !state.showInfo;
+            document.getElementById('infoBtn').querySelector('span') ? 
+                document.getElementById('infoBtn').querySelector('span').textContent = state.showInfo ? 'Hide Info Overlay' : 'Show Info Overlay' : null;
+            document.getElementById('infoBtn').innerHTML = document.getElementById('infoBtn').innerHTML.replace(state.showInfo ? 'Show' : 'Hide', state.showInfo ? 'Hide' : 'Show');
+            draw();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            state.viewAngle = { x: 0, y: 0 };
+            state.diopter = 0;
+            state.distance = 3;
+            state.brightness = 80;
+            state.aperture = 'medium';
+            document.getElementById('distance').value = 3;
+            document.getElementById('diopter').value = 0;
+            document.getElementById('brightness').value = 80;
+            document.getElementById('distanceValue').textContent = '3.0';
+            document.getElementById('diopterValue').textContent = '0';
+            document.getElementById('brightnessValue').textContent = '80';
+            document.getElementById('distanceHint').textContent = 'Good distance';
+            document.querySelectorAll('.aperture-btn').forEach(b => {
+                b.className = b.dataset.aperture === 'medium' ? 
+                    'aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-blue-600 text-white' :
+                    'aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-gray-600 text-gray-300 hover:bg-gray-500';
+            });
+            draw();
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!state.isOn || state.distance > 8) return;
+            state.isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            state.lastMouse = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!state.isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            const deltaX = currentX - state.lastMouse.x;
+            const deltaY = currentY - state.lastMouse.y;
+            state.viewAngle.x = Math.max(-150, Math.min(150, state.viewAngle.x + deltaX * 0.5));
+            state.viewAngle.y = Math.max(-150, Math.min(150, state.viewAngle.y + deltaY * 0.5));
+            state.lastMouse = { x: currentX, y: currentY };
+            draw();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            state.isDragging = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            state.isDragging = false;
+        });
+
+        function updateStatusText() {
+            const text = !state.isOn ? 'Turn on the ophthalmoscope to begin examination' :
+                        state.distance > 8 ? 'Red reflex visible - move closer to see fundus details' :
+                        'Drag to pan • Use arrow buttons to switch between images';
+            document.getElementById('statusText').textContent = text;
+        }
+
+        // Initialize
+        draw();
+    </script>
+</body>
+</html>
