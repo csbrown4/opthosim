@@ -255,13 +255,29 @@
             const focus = calculateFocus();
 
             if (state.distance > 8) {
-                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, fov);
-                gradient.addColorStop(0, 'rgb(255, 80, 50)');
-                gradient.addColorStop(0.6, 'rgb(200, 40, 20)');
-                gradient.addColorStop(1, 'rgb(0, 0, 0)');
+                // Red reflex with pupil effect
+                const pupilSize = Math.min(fov * 0.8, 100);
+                
+                // Outer glow (pupil margin)
+                const outerGlow = ctx.createRadialGradient(centerX, centerY, pupilSize * 0.7, centerX, centerY, pupilSize);
+                outerGlow.addColorStop(0, 'rgba(255, 100, 60, 0.9)');
+                outerGlow.addColorStop(0.8, 'rgba(220, 50, 30, 0.7)');
+                outerGlow.addColorStop(1, 'rgba(0, 0, 0, 1)');
+                
+                ctx.fillStyle = outerGlow;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, pupilSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner red reflex
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, pupilSize * 0.6);
+                gradient.addColorStop(0, 'rgba(255, 120, 80, 1)');
+                gradient.addColorStop(0.4, 'rgba(255, 90, 60, 0.9)');
+                gradient.addColorStop(0.8, 'rgba(200, 50, 30, 0.6)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+                ctx.arc(centerX, centerY, pupilSize * 0.6, 0, Math.PI * 2);
                 ctx.fill();
 
                 ctx.fillStyle = '#fff';
@@ -311,11 +327,11 @@
             const blurAmount = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
             ctx.filter = blurAmount > 0 ? `brightness(${brightnessValue}) blur(${blurAmount}px)` : `brightness(${brightnessValue})`;
 
-            const scale = 1.2;
+            const scale = 0.8;
             const imgWidth = img.width * scale;
             const imgHeight = img.height * scale;
-            const offsetX = centerX - imgWidth / 2 - state.viewAngle.x * 2.5;
-            const offsetY = centerY - imgHeight / 2 - state.viewAngle.y * 2.5;
+            const offsetX = centerX - imgWidth / 2 - state.viewAngle.x * 1.5;
+            const offsetY = centerY - imgHeight / 2 - state.viewAngle.y * 1.5;
 
             ctx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
             ctx.filter = 'none';
@@ -462,8 +478,8 @@
             const currentY = e.clientY - rect.top;
             const deltaX = currentX - state.lastMouse.x;
             const deltaY = currentY - state.lastMouse.y;
-            state.viewAngle.x = Math.max(-150, Math.min(150, state.viewAngle.x + deltaX * 0.5));
-            state.viewAngle.y = Math.max(-150, Math.min(150, state.viewAngle.y + deltaY * 0.5));
+            state.viewAngle.x = Math.max(-250, Math.min(250, state.viewAngle.x + deltaX * 0.8));
+            state.viewAngle.y = Math.max(-250, Math.min(250, state.viewAngle.y + deltaY * 0.8));
             state.lastMouse = { x: currentX, y: currentY };
             draw();
         });
