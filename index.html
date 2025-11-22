@@ -186,7 +186,12 @@
             handTremor: { x: 0, y: 0 },
             pupilSize: 1.0,
             lastPanSpeed: 0,
-            heartPhase: 0 // For pulsation
+            heartPhase: 0,
+            powerOnBrightness: 0, // For startup warm-up
+            targetFOV: 0, // For smooth FOV transitions
+            currentFOV: 0,
+            saccadeTimer: 0,
+            saccadeOffset: { x: 0, y: 0 }
         };
 
         let allConditions = [];
@@ -247,7 +252,7 @@
             osc.frequency.setValueAtTime(1200, now);
             osc.frequency.exponentialRampToValueAtTime(800, now + 0.02);
             
-            gain.gain.setValueAtTime(0.03, now); // Reduced from 0.15 to 0.03
+            gain.gain.setValueAtTime(0.01, now); // Reduced from 0.03 to 0.01
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
             
             osc.start(now);
@@ -267,7 +272,7 @@
             osc.frequency.setValueAtTime(600, now);
             osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
             
-            gain.gain.setValueAtTime(0.08, now); // Reduced from 0.2 to 0.08
+            gain.gain.setValueAtTime(0.03, now); // Reduced from 0.08 to 0.03
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
             
             osc.start(now);
@@ -483,11 +488,19 @@
         function calculateFOV() {
             const base = apertureSettings[state.aperture].size;
             const d = state.distance;
-            if (d < 1.5) return base * 0.3;
-            if (d < 3) return base * (0.5 + (d - 1.5) * 0.4);
-            if (d <= 6) return base * (1.1 + (d - 3) * 0.1);
-            if (d <= 8) return base * (1.4 - (d - 6) * 0.2);
-            return base * 0.8;
+            let targetFOV;
+            
+            if (d < 1.5) targetFOV = base * 0.3;
+            else if (d < 3) targetFOV = base * (0.5 + (d - 1.5) * 0.4);
+            else if (d <= 6) targetFOV = base * (1.1 + (d - 3) * 0.1);
+            else if (d <= 8) targetFOV = base * (1.4 - (d - 6) * 0.2);
+            else targetFOV = base * 0.8;
+            
+            // Smooth FOV transition
+            if (state.currentFOV === 0) state.currentFOV = targetFOV; // Initialize
+            state.currentFOV += (targetFOV - state.currentFOV) * 0.15; // Smooth interpolation
+            
+            return state.currentFOV * state.pupilSize;
         }
 
         function calculateFocus() {
@@ -513,28 +526,47 @@
                 ctx.font = '24px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText('Ophthalmoscope OFF', cx, cy);
+                state.powerOnBrightness = 0; // Reset on power off
                 return;
+            }
+
+            // Startup warm-up sequence
+            if (state.powerOnBrightness < 1.0) {
+                state.powerOnBrightness += 0.02; // Gradual warm-up over ~1 second
             }
 
             if (state.realisticEffects) {
                 state.time += 0.016;
                 
-                // Blinking
-                if (Math.random() < 0.004) state.blinkTimer = 0.15;
+                // Blinking - reduced frequency
+                if (Math.random() < 0.002) state.blinkTimer = 0.15;
                 if (state.blinkTimer > 0) state.blinkTimer -= 0.016;
                 
                 // Hand tremor - very subtle random shake
-                state.handTremor.x += (Math.random() - 0.5) * 0.08; // Much smaller (was 0.3)
+                state.handTremor.x += (Math.random() - 0.5) * 0.08;
                 state.handTremor.y += (Math.random() - 0.5) * 0.08;
-                state.handTremor.x *= 0.92; // More damping (was 0.85)
+                state.handTremor.x *= 0.92;
                 state.handTremor.y *= 0.92;
                 
-                // Pupil constriction based on brightness
+                // Pupil constriction based on brightness - SLOW response (2-3 seconds)
                 const targetPupil = 1.0 - (state.brightness - 80) / 200;
-                state.pupilSize += (targetPupil - state.pupilSize) * 0.05;
+                state.pupilSize += (targetPupil - state.pupilSize) * 0.01; // Much slower (was 0.05)
+                
+                // Spontaneous saccades (patient eye movement)
+                state.saccadeTimer -= 0.016;
+                if (state.saccadeTimer <= 0) {
+                    // Random interval between 8-25 seconds
+                    state.saccadeTimer = 8 + Math.random() * 17;
+                    // Quick saccade movement
+                    state.saccadeOffset.x = (Math.random() - 0.5) * 40;
+                    state.saccadeOffset.y = (Math.random() - 0.5) * 40;
+                }
+                // Decay saccade offset smoothly
+                state.saccadeOffset.x *= 0.85;
+                state.saccadeOffset.y *= 0.85;
             }
 
-            const fov = calculateFOV() * state.pupilSize;
+            const fov = calculateFOV();
             const focus = calculateFocus();
 
             if (state.distance > 8) {
@@ -601,40 +633,69 @@
             ctx.clip();
 
             const blink = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 5, 0.85) : 0;
-            const bright = (state.brightness / 80) * (1 - blink);
+            const bright = (state.brightness / 80) * (1 - blink) * state.powerOnBrightness;
             const blur = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
             
             // Add motion blur if panning quickly
             const motionBlur = state.realisticEffects ? Math.min(state.lastPanSpeed / 20, 2) : 0;
             const totalBlur = blur + motionBlur;
             
-            ctx.filter = totalBlur > 0 ? `brightness(${bright}) blur(${totalBlur}px)` : `brightness(${bright})`;
+            // Spherical aberration - softer at periphery
+            const panDist = Math.sqrt(state.viewAngle.x * state.viewAngle.x + state.viewAngle.y * state.viewAngle.y);
+            const peripheralBlur = state.realisticEffects ? Math.floor((panDist / 500) * 2) : 0;
+            const finalBlur = totalBlur + peripheralBlur;
+            
+            ctx.filter = finalBlur > 0 ? `brightness(${bright}) blur(${finalBlur}px)` : `brightness(${bright})`;
 
-            const scale = 0.6;
+            const scale = 0.75;
             const iw = img.width * scale, ih = img.height * scale;
             
-            // Apply very subtle hand tremor
+            // Apply very subtle hand tremor and saccade offset
             const tremorX = state.realisticEffects ? state.handTremor.x : 0;
             const tremorY = state.realisticEffects ? state.handTremor.y : 0;
+            const saccadeX = state.realisticEffects ? state.saccadeOffset.x : 0;
+            const saccadeY = state.realisticEffects ? state.saccadeOffset.y : 0;
             
-            const ox = cx - iw/2 - state.viewAngle.x + tremorX;
-            const oy = cy - ih/2 - state.viewAngle.y + tremorY;
+            const ox = cx - iw/2 - state.viewAngle.x + tremorX + saccadeX;
+            const oy = cy - ih/2 - state.viewAngle.y + tremorY + saccadeY;
             
             ctx.drawImage(img, ox, oy, iw, ih);
             ctx.filter = 'none';
             
+            // Choroidal reflex variation - color shifts based on pan angle
+            if (state.realisticEffects) {
+                const angle = Math.atan2(state.viewAngle.y, state.viewAngle.x);
+                const normalizedAngle = (angle + Math.PI) / (2 * Math.PI); // 0 to 1
+                
+                // Nasal (right): more orange, Temporal (left): more red
+                const nasalness = Math.cos(angle); // -1 to 1
+                
+                const choroidalGrad = ctx.createRadialGradient(cx, cy, fov * 0.4, cx, cy, fov * 0.95);
+                
+                if (nasalness > 0) {
+                    // More nasal = more orange tint
+                    choroidalGrad.addColorStop(0, `rgba(255, 240, 230, ${0.02})`);
+                    choroidalGrad.addColorStop(1, `rgba(255, 180, 120, ${0.06 * nasalness})`);
+                } else {
+                    // More temporal = more red tint
+                    choroidalGrad.addColorStop(0, `rgba(255, 240, 240, ${0.02})`);
+                    choroidalGrad.addColorStop(1, `rgba(255, 140, 140, ${0.06 * -nasalness})`);
+                }
+                
+                ctx.fillStyle = choroidalGrad;
+                ctx.globalCompositeOperation = 'overlay';
+                ctx.fillRect(0, 0, w, h);
+                ctx.globalCompositeOperation = 'source-over';
+            }
+            
             // Fundus color shift - warmer at periphery, cooler at center
             if (state.realisticEffects) {
-                // Calculate distance from center of view
                 const panDist = Math.sqrt(state.viewAngle.x * state.viewAngle.x + state.viewAngle.y * state.viewAngle.y);
-                const maxPanDist = 500; // Maximum realistic pan distance
+                const maxPanDist = 500;
                 const peripheralness = Math.min(panDist / maxPanDist, 1.0);
                 
-                // Create radial gradient for color temperature shift
-                // Center: slightly cooler (bluer), Periphery: warmer (more orange/red)
                 const colorGrad = ctx.createRadialGradient(cx, cy, fov * 0.3, cx, cy, fov * 0.9);
                 
-                // Subtle effect: center gets slight blue tint, periphery gets orange/red tint
                 const centerTint = `rgba(200, 220, 255, ${0.03 * (1 - peripheralness)})`;
                 const midTint = `rgba(255, 240, 220, ${0.02})`;
                 const edgeTint = `rgba(255, 200, 160, ${0.05 + peripheralness * 0.08})`;
@@ -649,11 +710,45 @@
                 ctx.globalCompositeOperation = 'source-over';
             }
             
+            // Specular highlights on vessels
+            if (state.realisticEffects && focus > 0.8) {
+                // Create subtle bright streaks (simulating light on vessels)
+                const numHighlights = 3;
+                for (let i = 0; i < numHighlights; i++) {
+                    const highlightAngle = (i / numHighlights) * Math.PI * 2 + state.time * 0.1;
+                    const highlightDist = fov * 0.3 + Math.sin(state.time + i) * 20;
+                    const hx = cx + Math.cos(highlightAngle) * highlightDist;
+                    const hy = cy + Math.sin(highlightAngle) * highlightDist;
+                    
+                    const highlightGrad = ctx.createRadialGradient(hx, hy, 0, hx, hy, 15);
+                    highlightGrad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+                    highlightGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.fillStyle = highlightGrad;
+                    ctx.fillRect(0, 0, w, h);
+                }
+            }
+            
             ctx.restore();
+
+            // Coaxial light falloff - center brighter than edges
+            if (state.realisticEffects) {
+                const coaxialGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, fov);
+                coaxialGrad.addColorStop(0, 'rgba(255, 255, 255, 0.03)');
+                coaxialGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0)');
+                coaxialGrad.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, fov, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.fillStyle = coaxialGrad;
+                ctx.fillRect(0, 0, w, h);
+                ctx.restore();
+            }
 
             // Enhanced vignetting with red reflex glow at edges when well-focused
             if (focus > 0.8 && state.realisticEffects) {
-                // Red reflex glow around edges
                 const glowGrad = ctx.createRadialGradient(cx, cy, fov * 0.7, cx, cy, fov);
                 glowGrad.addColorStop(0, 'rgba(255, 80, 40, 0)');
                 glowGrad.addColorStop(0.85, 'rgba(255, 60, 30, 0.08)');
@@ -680,6 +775,32 @@
             ctx.fillStyle = vig;
             ctx.fillRect(0,0,w,h);
             ctx.restore();
+            
+            // Eyelash shadows when too close
+            if (state.distance < 2 && state.realisticEffects) {
+                const lashIntensity = (2 - state.distance) / 2; // 0 to 1
+                
+                // Top lashes
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, fov, 0, Math.PI * 2);
+                ctx.clip();
+                
+                const topLashGrad = ctx.createLinearGradient(cx, cy - fov, cx, cy - fov * 0.7);
+                topLashGrad.addColorStop(0, `rgba(0, 0, 0, ${0.6 * lashIntensity})`);
+                topLashGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = topLashGrad;
+                ctx.fillRect(cx - fov, cy - fov, fov * 2, fov * 0.35);
+                
+                // Bottom lashes (lighter)
+                const bottomLashGrad = ctx.createLinearGradient(cx, cy + fov, cx, cy + fov * 0.7);
+                bottomLashGrad.addColorStop(0, `rgba(0, 0, 0, ${0.4 * lashIntensity})`);
+                bottomLashGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = bottomLashGrad;
+                ctx.fillRect(cx - fov, cy + fov * 0.65, fov * 2, fov * 0.35);
+                
+                ctx.restore();
+            }
             
             // Corneal reflection - small bright spot that moves opposite to pan
             if (state.realisticEffects && state.distance <= 6) {
@@ -739,6 +860,7 @@
             
             if (state.isOn) {
                 startAmbientHum();
+                state.saccadeTimer = 8 + Math.random() * 17; // Initialize saccade timer
             } else {
                 stopAmbientHum();
             }
@@ -970,9 +1092,9 @@
             const newX = state.viewAngle.x + dx * 1.5;
             const newY = state.viewAngle.y + dy * 1.5;
             
-            // Elliptical constraint - wider horizontal (nasal/temporal), narrower vertical
-            const maxX = 575; // 50 pixels more than before (was 525)
-            const maxY = 475; // 50 pixels less vertically
+            // Elliptical constraint - slightly wider horizontal (nasal/temporal)
+            const maxX = 700; // Increased and more balanced
+            const maxY = 650; // Increased to use more of the view
             const normalizedDist = (newX * newX) / (maxX * maxX) + (newY * newY) / (maxY * maxY);
             
             // Only update if within bounds - don't snap to edge
