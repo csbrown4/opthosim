@@ -119,6 +119,12 @@
 
             <!-- Control Buttons -->
             <div class="space-y-2 mb-4">
+                <button id="effectsBtn" class="w-full px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition flex items-center justify-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                    <span>Realistic Effects: ON</span>
+                </button>
                 <button id="infoBtn" class="w-full px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition flex items-center justify-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
@@ -170,6 +176,7 @@
             distance: 3,
             viewAngle: { x: 0, y: 0 },
             showInfo: true,
+            realisticEffects: true,
             isDragging: false,
             lastMouse: { x: 0, y: 0 },
             loadedImages: {},
@@ -177,7 +184,6 @@
             // Animation state
             time: 0,
             heartbeatPhase: 0,
-            tremor: { x: 0, y: 0 },
             blinkTimer: 0
         };
 
@@ -293,19 +299,17 @@
             }
 
             // Update animation state
-            state.time += 0.016; // ~60fps
-            state.heartbeatPhase = Math.sin(state.time * 4.5) * 0.5 + 0.5; // ~70 bpm
-            
-            // Subtle eye tremor/microsaccades
-            state.tremor.x = Math.sin(state.time * 3.2) * 0.3 + Math.sin(state.time * 7.1) * 0.15;
-            state.tremor.y = Math.cos(state.time * 2.8) * 0.3 + Math.cos(state.time * 6.3) * 0.15;
-            
-            // Random blink every 4-8 seconds
-            if (Math.random() < 0.003) {
-                state.blinkTimer = 0.2;
-            }
-            if (state.blinkTimer > 0) {
-                state.blinkTimer -= 0.016;
+            if (state.realisticEffects) {
+                state.time += 0.016;
+                state.heartbeatPhase = Math.sin(state.time * 4.5) * 0.5 + 0.5;
+                
+                // Random blink every 4-8 seconds
+                if (Math.random() < 0.003) {
+                    state.blinkTimer = 0.2;
+                }
+                if (state.blinkTimer > 0) {
+                    state.blinkTimer -= 0.016;
+                }
             }
 
             const fov = calculateFOV();
@@ -381,7 +385,7 @@
             ctx.clip();
 
             // Apply blink darkening
-            const blinkDarkness = state.blinkTimer > 0 ? Math.min(state.blinkTimer * 4, 0.8) : 0;
+            const blinkDarkness = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 4, 0.8) : 0;
 
             const brightnessValue = (state.brightness / 80) * (1 - blinkDarkness);
             const blurAmount = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
@@ -391,35 +395,56 @@
             const imgWidth = img.width * scale;
             const imgHeight = img.height * scale;
             
-            // Add subtle pulsation from heartbeat
-            const pulse = 1 + (state.heartbeatPhase * 0.008);
+            // Add subtle pulsation from heartbeat only if effects enabled
+            const pulse = state.realisticEffects ? (1 + (state.heartbeatPhase * 0.006)) : 1;
             const pulsedWidth = imgWidth * pulse;
             const pulsedHeight = imgHeight * pulse;
             
-            // Add tremor and user pan
-            const offsetX = centerX - pulsedWidth / 2 - (state.viewAngle.x + state.tremor.x) * 1.0;
-            const offsetY = centerY - pulsedHeight / 2 - (state.viewAngle.y + state.tremor.y) * 1.0;
+            const offsetX = centerX - pulsedWidth / 2 - state.viewAngle.x * 1.0;
+            const offsetY = centerY - pulsedHeight / 2 - state.viewAngle.y * 1.0;
 
             ctx.drawImage(img, offsetX, offsetY, pulsedWidth, pulsedHeight);
             ctx.filter = 'none';
-            
-            // Add subtle optical grain/noise for realism
-            if (!blinkDarkness) {
-                ctx.globalAlpha = 0.03;
-                const imageData = ctx.getImageData(0, 0, width, height);
-                for (let i = 0; i < imageData.data.length; i += 4) {
-                    if (Math.random() > 0.98) {
-                        const noise = (Math.random() - 0.5) * 50;
-                        imageData.data[i] += noise;
-                        imageData.data[i + 1] += noise;
-                        imageData.data[i + 2] += noise;
-                    }
-                }
-                ctx.putImageData(imageData, 0, 0);
-                ctx.globalAlpha = 1.0;
-            }
-            
             ctx.restore();
+            
+            // Add 3D depth effect to vessels and disc
+            if (state.realisticEffects) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+                ctx.clip();
+                
+                // Create radial gradient overlay for depth - darker at edges, lighter at center
+                // This simulates the curvature of the retina
+                const depthGrad = ctx.createRadialGradient(
+                    centerX - state.viewAngle.x * 0.3, 
+                    centerY - state.viewAngle.y * 0.3, 
+                    fov * 0.2, 
+                    centerX, 
+                    centerY, 
+                    fov * 0.9
+                );
+                depthGrad.addColorStop(0, 'rgba(255, 255, 255, 0.08)'); // Center highlight (convex surface)
+                depthGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+                depthGrad.addColorStop(1, 'rgba(0, 0, 0, 0.15)'); // Edge shadow
+                
+                ctx.fillStyle = depthGrad;
+                ctx.fillRect(0, 0, width, height);
+                
+                // Add specular highlight that moves with viewing angle (simulates glossy retinal surface)
+                const specX = centerX + state.viewAngle.x * 0.15 + (state.brightness - 80) * 0.5;
+                const specY = centerY + state.viewAngle.y * 0.15 - fov * 0.2;
+                const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, fov * 0.25);
+                specGrad.addColorStop(0, `rgba(255, 255, 255, ${Math.min(state.brightness / 400, 0.12)})`);
+                specGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0)');
+                
+                ctx.fillStyle = specGrad;
+                ctx.beginPath();
+                ctx.arc(specX, specY, fov * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
 
             const vignetteGrad = ctx.createRadialGradient(centerX, centerY, fov * 0.75, centerX, centerY, fov);
             vignetteGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
