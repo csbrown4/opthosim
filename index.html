@@ -43,6 +43,10 @@
                 <h1 class="text-xl font-bold text-white">Direct Ophthalmoscope</h1>
             </div>
 
+            <div class="mb-4 p-3 bg-yellow-900 rounded text-yellow-200 text-xs" id="loadingStatus">
+                Loading images from GitHub...
+            </div>
+
             <div class="mb-6 p-4 bg-gray-700 rounded-lg">
                 <button id="powerBtn" class="w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -192,46 +196,82 @@
             large: { size: 180 }
         };
 
-        // Initialize - load images from GitHub
+        // Initialize - load from GitHub API
         async function init() {
+            const statusEl = document.getElementById('loadingStatus');
+            statusEl.textContent = 'Discovering images from GitHub...';
+            
             try {
-                const resp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`);
-                const folders = (await resp.json()).filter(i => i.type === 'dir');
+                // Use GitHub API to get full tree
+                const treeResp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/git/trees/${GITHUB_BRANCH}?recursive=1`);
                 
-                for (const folder of folders) {
-                    const fr = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${folder.name}`);
-                    const files = (await fr.json()).filter(f => /\.(jpe?g|png)$/i.test(f.name));
+                if (treeResp.ok) {
+                    const treeData = await treeResp.json();
+                    const folders = {};
                     
-                    if (files.length > 0) {
-                        imageLibrary[folder.name] = {
-                            name: folder.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                            images: files.map(f => `${RAW_BASE}/${folder.name}/${f.name}`)
+                    console.log('GitHub tree data:', treeData);
+                    
+                    // Parse tree structure
+                    for (const item of treeData.tree) {
+                        if (item.type === 'blob' && item.path.includes('/')) {
+                            const parts = item.path.split('/');
+                            if (parts.length === 2) {
+                                const folder = parts[0];
+                                const filename = parts[1];
+                                
+                                if (/\.(jpe?g|png|JPG|JPEG|PNG)$/i.test(filename)) {
+                                    if (!folders[folder]) {
+                                        folders[folder] = [];
+                                    }
+                                    folders[folder].push(filename);
+                                }
+                            }
+                        }
+                    }
+                    
+                    console.log('Discovered folders:', folders);
+                    
+                    // Build image library
+                    for (const [folder, files] of Object.entries(folders)) {
+                        const displayName = folder.replace(/-/g, ' ')
+                            .replace(/\b\w/g, l => l.toUpperCase());
+                        
+                        imageLibrary[folder] = {
+                            name: displayName,
+                            images: files.map(f => `${RAW_BASE}/${encodeURIComponent(folder)}/${encodeURIComponent(f)}`)
                         };
                     }
+                    
+                    const totalImages = Object.values(folders).flat().length;
+                    statusEl.textContent = `✓ Loaded ${Object.keys(folders).length} conditions with ${totalImages} images!`;
+                    statusEl.className = 'mb-4 p-3 bg-green-900 rounded text-green-200 text-xs';
+                    
+                    console.log('Image library:', imageLibrary);
+                    
+                } else {
+                    throw new Error(`API returned ${treeResp.status}`);
                 }
                 
-                const conditions = Object.keys(imageLibrary);
-                if (conditions.length > 0) {
-                    state.currentCondition = conditions[0];
-                    allConditions = conditions;
-                    updateConditionUI();
-                } else {
-                    throw new Error('No images found');
-                }
             } catch (err) {
-                console.error('GitHub load failed:', err);
-                // Fallback
-                imageLibrary = {
-                    normal: {
-                        name: 'Normal',
-                        images: Array.from({length: 10}, (_, i) => 
-                            `${RAW_BASE}/normal/1ffa96${String(44+i).padStart(2,'0')}-8d87-11e8-9daf-6045cb817f5b.JPG`
-                        ).filter((_, i) => ![2,3,5,6,8,9].includes(i))
-                    }
-                };
-                state.currentCondition = 'normal';
-                allConditions = ['normal'];
+                console.error('Failed to load from GitHub API:', err);
+                statusEl.textContent = `⚠ API Error - Check console (F12)`;
+                statusEl.className = 'mb-4 p-3 bg-red-900 rounded text-red-200 text-xs';
+                
+                // Provide a helpful error message
+                setTimeout(() => {
+                    alert('Failed to load images from GitHub.\n\nPossible issues:\n1. Repository might be private\n2. GitHub API rate limit reached\n3. Network connectivity\n\nCheck browser console (F12) for details.');
+                }, 1000);
+            }
+            
+            allConditions = Object.keys(imageLibrary);
+            if (allConditions.length > 0) {
+                state.currentCondition = allConditions[0];
                 updateConditionUI();
+                
+                setTimeout(() => {
+                    const statusEl = document.getElementById('loadingStatus');
+                    statusEl.style.display = 'none';
+                }, 3000);
             }
             
             state.isLoading = false;
@@ -308,13 +348,16 @@
         }
 
         function loadImage(url) {
+            console.log('Loading image:', url);
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {
+                console.log('✓ Image loaded:', url);
                 state.loadedImages[url] = img;
                 draw();
             };
-            img.onerror = () => {
+            img.onerror = (e) => {
+                console.error('✗ Image failed:', url);
                 state.imageErrors[url] = true;
                 draw();
             };
@@ -392,10 +435,22 @@
                 ctx.beginPath();
                 ctx.arc(cx, cy, fov, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Loading...', cx, cy);
+                
+                if (state.imageErrors[url]) {
+                    ctx.fillStyle = '#f88';
+                    ctx.font = '14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Image failed to load', cx, cy - 10);
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = '10px monospace';
+                    const shortUrl = url.split('/').slice(-2).join('/');
+                    ctx.fillText(shortUrl, cx, cy + 10);
+                } else {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Loading...', cx, cy);
+                }
                 return;
             }
 
