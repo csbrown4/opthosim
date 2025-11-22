@@ -247,8 +247,8 @@
             osc.frequency.setValueAtTime(1200, now);
             osc.frequency.exponentialRampToValueAtTime(800, now + 0.02);
             
-            gain.gain.setValueAtTime(0.15, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+            gain.gain.setValueAtTime(0.03, now); // Reduced from 0.15 to 0.03
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
             
             osc.start(now);
             osc.stop(now + 0.03);
@@ -267,7 +267,7 @@
             osc.frequency.setValueAtTime(600, now);
             osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
             
-            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.setValueAtTime(0.08, now); // Reduced from 0.2 to 0.08
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
             
             osc.start(now);
@@ -523,11 +523,11 @@
                 if (Math.random() < 0.004) state.blinkTimer = 0.15;
                 if (state.blinkTimer > 0) state.blinkTimer -= 0.016;
                 
-                // Hand tremor - subtle random shake
-                state.handTremor.x += (Math.random() - 0.5) * 0.3;
-                state.handTremor.y += (Math.random() - 0.5) * 0.3;
-                state.handTremor.x *= 0.85; // Damping
-                state.handTremor.y *= 0.85;
+                // Hand tremor - very subtle random shake
+                state.handTremor.x += (Math.random() - 0.5) * 0.08; // Much smaller (was 0.3)
+                state.handTremor.y += (Math.random() - 0.5) * 0.08;
+                state.handTremor.x *= 0.92; // More damping (was 0.85)
+                state.handTremor.y *= 0.92;
                 
                 // Pupil constriction based on brightness
                 const targetPupil = 1.0 - (state.brightness - 80) / 200;
@@ -601,16 +601,7 @@
             ctx.clip();
 
             const blink = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 5, 0.85) : 0;
-            
-            // Blood vessel pulsation - simulate cardiac cycle at ~70 bpm
-            let pulsation = 1.0;
-            if (state.realisticEffects) {
-                state.heartPhase += 0.016 * 7.33; // ~70 bpm (7.33 rad/sec)
-                // Subtle pulsation: 0.97 to 1.03 (±3% brightness variation)
-                pulsation = 1.0 + Math.sin(state.heartPhase) * 0.03;
-            }
-            
-            const bright = (state.brightness / 80) * (1 - blink) * pulsation;
+            const bright = (state.brightness / 80) * (1 - blink);
             const blur = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
             
             // Add motion blur if panning quickly
@@ -622,7 +613,7 @@
             const scale = 0.6;
             const iw = img.width * scale, ih = img.height * scale;
             
-            // Apply hand tremor
+            // Apply very subtle hand tremor
             const tremorX = state.realisticEffects ? state.handTremor.x : 0;
             const tremorY = state.realisticEffects ? state.handTremor.y : 0;
             
@@ -984,15 +975,13 @@
             const maxY = 475; // 50 pixels less vertically
             const normalizedDist = (newX * newX) / (maxX * maxX) + (newY * newY) / (maxY * maxY);
             
+            // Only update if within bounds - don't snap to edge
             if (normalizedDist <= 1) {
                 state.viewAngle.x = newX;
                 state.viewAngle.y = newY;
-            } else {
-                // Keep on the ellipse edge
-                const angle = Math.atan2(newY, newX);
-                state.viewAngle.x = Math.cos(angle) * maxX;
-                state.viewAngle.y = Math.sin(angle) * maxY;
             }
+            // If outside bounds, just don't update position (stay at current position)
+            
             state.lastMouse = { x: cx, y: cy };
             draw();
         });
