@@ -89,10 +89,10 @@
             <!-- Diopter Wheel -->
             <div class="mb-4">
                 <label class="text-white text-sm font-semibold mb-2 block">
-                    Diopter Wheel: <span id="diopterValue">0</span>
+                    Diopter Wheel: <span id="diopterValue">0</span>D
                 </label>
                 <input type="range" id="diopter" min="-20" max="20" step="1" value="0" class="w-full">
-                <div class="text-xs text-gray-400 mt-1">Adjust for patient's refractive error</div>
+                <div class="text-xs text-gray-400 mt-1">Compensate for refractive error & working distance</div>
             </div>
 
             <!-- Light Intensity -->
@@ -173,7 +173,12 @@
             isDragging: false,
             lastMouse: { x: 0, y: 0 },
             loadedImages: {},
-            imageErrors: {}
+            imageErrors: {},
+            // Animation state
+            time: 0,
+            heartbeatPhase: 0,
+            tremor: { x: 0, y: 0 },
+            blinkTimer: 0
         };
 
         const imageUrls = [
@@ -190,9 +195,9 @@
         ];
 
         const apertureSettings = {
-            small: { size: 100 },
-            medium: { size: 150 },
-            large: { size: 220 }
+            small: { size: 80 },
+            medium: { size: 120 },
+            large: { size: 180 }
         };
 
         const canvas = document.getElementById('canvas');
@@ -221,14 +226,50 @@
         }
 
         function calculateFOV() {
+            // Realistic: closer distance = smaller field of view (more magnified)
+            // Optimal viewing distance is 2-5cm
             const baseSize = apertureSettings[state.aperture].size;
-            return baseSize / (state.distance * 0.25);
+            
+            if (state.distance < 1.5) {
+                // Too close - very restricted view
+                return baseSize * 0.3;
+            } else if (state.distance < 3) {
+                // Optimal close range - good view
+                return baseSize * (0.5 + (state.distance - 1.5) * 0.4);
+            } else if (state.distance <= 6) {
+                // Good working distance - best field of view
+                return baseSize * (1.1 + (state.distance - 3) * 0.1);
+            } else if (state.distance <= 8) {
+                // Getting far - reducing view
+                return baseSize * (1.4 - (state.distance - 6) * 0.2);
+            } else {
+                // Too far - only red reflex
+                return baseSize * 0.8;
+            }
         }
 
         function calculateFocus() {
-            const optimalDiopter = (state.distance - 3) * 2;
-            const focusError = Math.abs(state.diopter - optimalDiopter);
-            return Math.max(0, 1 - focusError / 15);
+            // Realistic diopter focusing based on distance
+            // At 2.5cm (typical working distance), you need about +40D
+            // Each cm closer needs more plus power, farther needs less
+            
+            const workingDistance = 2.5; // cm - optimal focus point
+            const distanceDiff = state.distance - workingDistance;
+            
+            // Approximate diopter needed: +40D at 2.5cm, adjust ±4D per cm
+            const neededDiopter = -distanceDiff * 4;
+            
+            // Calculate focus error
+            const focusError = Math.abs(state.diopter - neededDiopter);
+            
+            // Sharp focus within ±3D, degrading beyond that
+            if (focusError < 3) {
+                return 1.0;
+            } else if (focusError < 8) {
+                return 1.0 - (focusError - 3) / 10;
+            } else {
+                return Math.max(0.3, 1.0 - focusError / 20);
+            }
         }
 
         function draw() {
@@ -249,6 +290,22 @@
                 ctx.font = '16px Arial';
                 ctx.fillText('Turn on the power to begin examination', centerX, centerY + 40);
                 return;
+            }
+
+            // Update animation state
+            state.time += 0.016; // ~60fps
+            state.heartbeatPhase = Math.sin(state.time * 4.5) * 0.5 + 0.5; // ~70 bpm
+            
+            // Subtle eye tremor/microsaccades
+            state.tremor.x = Math.sin(state.time * 3.2) * 0.3 + Math.sin(state.time * 7.1) * 0.15;
+            state.tremor.y = Math.cos(state.time * 2.8) * 0.3 + Math.cos(state.time * 6.3) * 0.15;
+            
+            // Random blink every 4-8 seconds
+            if (Math.random() < 0.003) {
+                state.blinkTimer = 0.2;
+            }
+            if (state.blinkTimer > 0) {
+                state.blinkTimer -= 0.016;
             }
 
             const fov = calculateFOV();
@@ -323,18 +380,45 @@
             ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
             ctx.clip();
 
-            const brightnessValue = state.brightness / 80;
+            // Apply blink darkening
+            const blinkDarkness = state.blinkTimer > 0 ? Math.min(state.blinkTimer * 4, 0.8) : 0;
+
+            const brightnessValue = (state.brightness / 80) * (1 - blinkDarkness);
             const blurAmount = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
             ctx.filter = blurAmount > 0 ? `brightness(${brightnessValue}) blur(${blurAmount}px)` : `brightness(${brightnessValue})`;
 
             const scale = 0.6;
             const imgWidth = img.width * scale;
             const imgHeight = img.height * scale;
-            const offsetX = centerX - imgWidth / 2 - state.viewAngle.x * 1.0;
-            const offsetY = centerY - imgHeight / 2 - state.viewAngle.y * 1.0;
+            
+            // Add subtle pulsation from heartbeat
+            const pulse = 1 + (state.heartbeatPhase * 0.008);
+            const pulsedWidth = imgWidth * pulse;
+            const pulsedHeight = imgHeight * pulse;
+            
+            // Add tremor and user pan
+            const offsetX = centerX - pulsedWidth / 2 - (state.viewAngle.x + state.tremor.x) * 1.0;
+            const offsetY = centerY - pulsedHeight / 2 - (state.viewAngle.y + state.tremor.y) * 1.0;
 
-            ctx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
+            ctx.drawImage(img, offsetX, offsetY, pulsedWidth, pulsedHeight);
             ctx.filter = 'none';
+            
+            // Add subtle optical grain/noise for realism
+            if (!blinkDarkness) {
+                ctx.globalAlpha = 0.03;
+                const imageData = ctx.getImageData(0, 0, width, height);
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    if (Math.random() > 0.98) {
+                        const noise = (Math.random() - 0.5) * 50;
+                        imageData.data[i] += noise;
+                        imageData.data[i + 1] += noise;
+                        imageData.data[i + 2] += noise;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+                ctx.globalAlpha = 1.0;
+            }
+            
             ctx.restore();
 
             const vignetteGrad = ctx.createRadialGradient(centerX, centerY, fov * 0.75, centerX, centerY, fov);
@@ -404,7 +488,9 @@
         document.getElementById('distance').addEventListener('input', (e) => {
             state.distance = parseFloat(e.target.value);
             document.getElementById('distanceValue').textContent = state.distance.toFixed(1);
-            const hint = state.distance > 8 ? 'Too far - red reflex only' : state.distance < 2 ? 'Too close' : 'Good distance';
+            const hint = state.distance > 8 ? 'Too far - red reflex only' : 
+                        state.distance < 1.5 ? 'Too close - very limited view' : 
+                        state.distance >= 2 && state.distance <= 5 ? 'Optimal distance' : 'Good distance';
             document.getElementById('distanceHint').textContent = hint;
             canvas.style.cursor = state.isOn && state.distance <= 8 ? 'move' : 'default';
             updateStatusText();
@@ -413,7 +499,8 @@
 
         document.getElementById('diopter').addEventListener('input', (e) => {
             state.diopter = parseInt(e.target.value);
-            document.getElementById('diopterValue').textContent = state.diopter > 0 ? `+${state.diopter}` : state.diopter;
+            const sign = state.diopter > 0 ? '+' : state.diopter < 0 ? '' : '';
+            document.getElementById('diopterValue').textContent = `${sign}${state.diopter}`;
             draw();
         });
 
@@ -478,8 +565,8 @@
             const currentY = e.clientY - rect.top;
             const deltaX = currentX - state.lastMouse.x;
             const deltaY = currentY - state.lastMouse.y;
-            state.viewAngle.x = Math.max(-500, Math.min(500, state.viewAngle.x + deltaX * 1.2));
-            state.viewAngle.y = Math.max(-500, Math.min(500, state.viewAngle.y + deltaY * 1.2));
+            state.viewAngle.x = Math.max(-800, Math.min(800, state.viewAngle.x + deltaX * 2.0));
+            state.viewAngle.y = Math.max(-800, Math.min(800, state.viewAngle.y + deltaY * 2.0));
             state.lastMouse = { x: currentX, y: currentY };
             draw();
         });
@@ -499,8 +586,16 @@
             document.getElementById('statusText').textContent = text;
         }
 
-        // Initialize
+        // Initialize and start animation loop
+        function animate() {
+            if (state.isOn) {
+                draw();
+            }
+            requestAnimationFrame(animate);
+        }
+        
         draw();
+        animate();
     </script>
 </body>
 </html>
