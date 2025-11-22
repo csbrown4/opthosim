@@ -397,7 +397,23 @@
                 return;
             }
 
-            const url = state.quizMode ? quizImages[state.currentImageIndex]?.url : imageLibrary[state.currentCondition].images[state.currentImageIndex];
+            const url = state.quizMode ? 
+                (quizImages && quizImages[state.currentImageIndex] ? quizImages[state.currentImageIndex].url : null) : 
+                (imageLibrary[state.currentCondition] && imageLibrary[state.currentCondition].images ? imageLibrary[state.currentCondition].images[state.currentImageIndex] : null);
+            
+            if (!url) {
+                ctx.fillStyle = '#444444';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Loading image library...', centerX, centerY);
+                return;
+            }
+            
             const img = state.loadedImages[url];
             const hasError = state.imageErrors[url];
 
@@ -708,11 +724,14 @@
         });
 
         function updateQuizDisplay() {
+            if (!quizImages || quizImages.length === 0) return;
             document.getElementById('quizCounter').textContent = `Question ${state.currentImageIndex + 1} / ${quizImages.length}`;
             document.getElementById('scoreDisplay').textContent = `Score: ${state.score.correct}/${state.score.total}`;
         }
 
         function updateStudyDisplay() {
+            if (!imageLibrary || !imageLibrary[state.currentCondition]) return;
+            
             const condition = imageLibrary[state.currentCondition];
             document.getElementById('conditionName').textContent = condition.name;
             document.getElementById('conditionDesc').textContent = condition.description;
@@ -733,6 +752,7 @@
         });
 
         document.getElementById('prevBtn').addEventListener('click', () => {
+            if (!imageLibrary[state.currentCondition]) return;
             const maxIndex = imageLibrary[state.currentCondition].images.length - 1;
             state.currentImageIndex = state.currentImageIndex > 0 ? state.currentImageIndex - 1 : maxIndex;
             state.viewAngle = { x: 0, y: 0 };
@@ -741,6 +761,7 @@
         });
 
         document.getElementById('nextBtn').addEventListener('click', () => {
+            if (!imageLibrary[state.currentCondition]) return;
             const maxIndex = imageLibrary[state.currentCondition].images.length - 1;
             state.currentImageIndex = state.currentImageIndex < maxIndex ? state.currentImageIndex + 1 : 0;
             state.viewAngle = { x: 0, y: 0 };
