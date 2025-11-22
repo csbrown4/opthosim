@@ -777,11 +777,22 @@
                 ctx.restore();
             }
             
-            // Standard vignetting
-            const vig = ctx.createRadialGradient(cx, cy, fov * 0.6, cx, cy, fov);
+            // Standard vignetting - make it dynamic based on movement
+            const vigIntensity = state.realisticEffects ? 
+                0.3 + (state.lastPanSpeed / 100) * 0.2 : 0.3; // Varies with movement
+            
+            const vigOffset = state.realisticEffects ? {
+                x: state.viewAngle.x * 0.02,
+                y: state.viewAngle.y * 0.02
+            } : { x: 0, y: 0 };
+            
+            const vig = ctx.createRadialGradient(
+                cx + vigOffset.x, cy + vigOffset.y, fov * 0.6, 
+                cx + vigOffset.x, cy + vigOffset.y, fov
+            );
             vig.addColorStop(0, 'rgba(0,0,0,0)');
-            vig.addColorStop(0.7, 'rgba(0,0,0,0.3)');
-            vig.addColorStop(0.9, 'rgba(0,0,0,0.8)');
+            vig.addColorStop(0.7, `rgba(0,0,0,${vigIntensity})`);
+            vig.addColorStop(0.9, `rgba(0,0,0,${0.8 + vigIntensity * 0.5})`);
             vig.addColorStop(1, 'rgba(0,0,0,1)');
             ctx.save();
             ctx.beginPath();
@@ -817,15 +828,20 @@
                 ctx.restore();
             }
             
-            // Corneal reflection - small bright spot that moves opposite to pan
+            // Corneal reflection - more dynamic with movement
             if (state.realisticEffects && state.distance <= 6) {
-                const reflectX = cx - state.viewAngle.x * 0.15 + fov * 0.35;
-                const reflectY = cy - state.viewAngle.y * 0.15 - fov * 0.35;
-                const reflectSize = fov * 0.08;
+                // Position varies more with pan angle + subtle shimmer
+                const shimmer = Math.sin(state.time * 2) * 0.5;
+                const reflectX = cx - state.viewAngle.x * 0.2 + fov * 0.35 + shimmer;
+                const reflectY = cy - state.viewAngle.y * 0.2 - fov * 0.35 + Math.cos(state.time * 2.3) * 0.5;
+                const reflectSize = fov * (0.08 + Math.sin(state.time * 3) * 0.01); // Subtle size variation
+                
+                // Intensity varies with movement
+                const reflectIntensity = 0.6 - (state.lastPanSpeed / 100) * 0.2;
                 
                 const reflectGrad = ctx.createRadialGradient(reflectX, reflectY, 0, reflectX, reflectY, reflectSize);
-                reflectGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
-                reflectGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+                reflectGrad.addColorStop(0, `rgba(255, 255, 255, ${reflectIntensity})`);
+                reflectGrad.addColorStop(0.5, `rgba(255, 255, 255, ${reflectIntensity * 0.33})`);
                 reflectGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
                 
                 ctx.fillStyle = reflectGrad;
@@ -1107,8 +1123,8 @@
             const newX = state.viewAngle.x + dx * 1.5;
             const newY = state.viewAngle.y + dy * 1.5;
             
-            // Elliptical constraint - much wider horizontal for nasal/temporal viewing
-            const maxX = 900; // Significantly increased from 700
+            // Elliptical constraint - very wide horizontal for full nasal/temporal viewing
+            const maxX = 1100; // Increased from 900 - much wider
             const maxY = 650; // Keep vertical the same
             const normalizedDist = (newX * newX) / (maxX * maxX) + (newY * newY) / (maxY * maxY);
             
