@@ -459,8 +459,8 @@
             const rect = canvas.getBoundingClientRect();
             const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
             const dx = cx - state.lastMouse.x, dy = cy - state.lastMouse.y;
-            state.viewAngle.x = Math.max(-300, Math.min(300, state.viewAngle.x + dx * 1.2));
-            state.viewAngle.y = Math.max(-300, Math.min(300, state.viewAngle.y + dy * 1.2));
+            state.viewAngle.x = Math.max(-450, Math.min(450, state.viewAngle.x + dx * 1.5));
+            state.viewAngle.y = Math.max(-450, Math.min(450, state.viewAngle.y + dy * 1.5));
             state.lastMouse = { x: cx, y: cy };
             draw();
         });
