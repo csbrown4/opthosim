@@ -246,6 +246,19 @@
         const ctx = canvas.getContext('2d');
 
         // Load current image
+        function buildQuizImages() {
+            quizImages = [];
+            allConditions.forEach(condition => {
+                if (imageLibrary[condition] && imageLibrary[condition].images) {
+                    imageLibrary[condition].images.forEach(url => {
+                        quizImages.push({ url, condition });
+                    });
+                }
+            });
+            // Shuffle images for quiz
+            quizImages.sort(() => Math.random() - 0.5);
+        }
+
         function loadCurrentImage() {
             const url = imageUrls[state.currentImageIndex];
             if (state.loadedImages[url] || state.imageErrors[url]) {
@@ -844,15 +857,19 @@
 
         function updateStatusText() {
             const text = !state.isOn ? 'Turn on the ophthalmoscope to begin examination' :
+                        state.isLoadingLibrary ? 'Loading image library from GitHub...' :
                         state.distance > 8 ? 'Red reflex visible - move closer to see fundus details' :
                         'Drag to pan • Use arrow buttons to switch between images';
             document.getElementById('statusText').textContent = text;
         }
 
-        // Initialize
-        buildQuizImages();
-        updateStudyDisplay();
-        draw();
+        // Initialize - load from GitHub first
+        loadImageLibraryFromGitHub().then(() => {
+            buildQuizImages();
+            updateStudyDisplay();
+            draw();
+        });
+        
         animate();
         
         // Animation loop
