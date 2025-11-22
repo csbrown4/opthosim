@@ -56,25 +56,61 @@
 
             <!-- Image Navigation -->
             <div class="mb-4 p-4 bg-gray-700 rounded-lg">
-                <label class="text-white text-sm font-semibold mb-2 block">
-                    Condition: <span id="conditionName">Normal/Healthy Fundus</span>
-                </label>
                 <div class="flex items-center justify-between mb-3">
-                    <button id="prevBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="m15 18-6-6 6-6"/>
-                        </svg>
-                    </button>
-                    <span class="text-white font-mono" id="imageCounter">Image 1 / 10</span>
-                    <button id="nextBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="m9 18 6-6-6-6"/>
-                        </svg>
+                    <label className="text-white text-sm font-semibold">
+                        Mode: <span id="modeName">Study Mode</span>
+                    </label>
+                    <button id="quizToggle" class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
+                        Quiz Mode
                     </button>
                 </div>
-                <p class="text-gray-300 text-xs">
-                    Healthy retina with clear optic disc, intact blood vessels, and normal macula. No signs of pathology.
-                </p>
+                
+                <div id="studyModePanel">
+                    <label class="text-white text-sm font-semibold mb-2 block">
+                        Condition: <span id="conditionName">Normal/Healthy Fundus</span>
+                    </label>
+                    <div class="flex items-center justify-between mb-3">
+                        <button id="prevBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m15 18-6-6 6-6"/>
+                            </svg>
+                        </button>
+                        <span class="text-white font-mono" id="imageCounter">Image 1 / 10</span>
+                        <button id="nextBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m9 18 6-6-6-6"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-gray-300 text-xs" id="conditionDesc">
+                        Healthy retina with clear optic disc, intact blood vessels, and normal macula. No signs of pathology.
+                    </p>
+                </div>
+                
+                <div id="quizModePanel" style="display: none;">
+                    <div class="mb-3">
+                        <label class="text-white text-sm font-semibold mb-2 block">Your Diagnosis:</label>
+                        <select id="guessSelect" class="w-full px-3 py-2 bg-gray-600 text-white rounded border border-gray-500">
+                            <option value="">-- Select Diagnosis --</option>
+                        </select>
+                    </div>
+                    <button id="submitGuess" class="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold mb-3" disabled>
+                        Submit Answer
+                    </button>
+                    
+                    <div id="answerPanel" style="display: none;" class="p-3 rounded mb-3">
+                        <div id="answerText" class="font-semibold mb-2"></div>
+                        <div id="correctAnswer" class="text-sm"></div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-white font-mono text-sm" id="quizCounter">Question 1 / 10</span>
+                        <span class="text-white font-mono text-sm" id="scoreDisplay">Score: 0/0</span>
+                    </div>
+                    <button id="nextQuestion" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700" style="display: none;">
+                        Next Question
+                    </button>
+                </div>
             </div>
 
             <!-- Distance Control -->
@@ -301,11 +337,10 @@
             // Update animation state
             if (state.realisticEffects) {
                 state.time += 0.016;
-                state.heartbeatPhase = Math.sin(state.time * 4.5) * 0.5 + 0.5;
                 
-                // Random blink every 4-8 seconds
-                if (Math.random() < 0.003) {
-                    state.blinkTimer = 0.2;
+                // Random blink every 3-7 seconds
+                if (Math.random() < 0.004) {
+                    state.blinkTimer = 0.15;
                 }
                 if (state.blinkTimer > 0) {
                     state.blinkTimer -= 0.016;
@@ -349,7 +384,7 @@
                 return;
             }
 
-            const url = imageUrls[state.currentImageIndex];
+            const url = state.quizMode ? quizImages[state.currentImageIndex]?.url : imageLibrary[state.currentCondition].images[state.currentImageIndex];
             const img = state.loadedImages[url];
             const hasError = state.imageErrors[url];
 
@@ -385,62 +420,138 @@
             ctx.clip();
 
             // Apply blink darkening
-            const blinkDarkness = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 4, 0.8) : 0;
+            const blinkDarkness = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 5, 0.85) : 0;
 
             const brightnessValue = (state.brightness / 80) * (1 - blinkDarkness);
             const blurAmount = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
             ctx.filter = blurAmount > 0 ? `brightness(${brightnessValue}) blur(${blurAmount}px)` : `brightness(${brightnessValue})`;
 
             const scale = 0.6;
-            const imgWidth = img.width * scale;
-            const imgHeight = img.height * scale;
             
-            // Add subtle pulsation from heartbeat only if effects enabled
-            const pulse = state.realisticEffects ? (1 + (state.heartbeatPhase * 0.006)) : 1;
-            const pulsedWidth = imgWidth * pulse;
-            const pulsedHeight = imgHeight * pulse;
+            // Calculate offset for panning
+            const panOffsetX = -state.viewAngle.x * 1.0;
+            const panOffsetY = -state.viewAngle.y * 1.0;
             
-            const offsetX = centerX - pulsedWidth / 2 - state.viewAngle.x * 1.0;
-            const offsetY = centerY - pulsedHeight / 2 - state.viewAngle.y * 1.0;
-
-            ctx.drawImage(img, offsetX, offsetY, pulsedWidth, pulsedHeight);
+            // Apply subtle barrel distortion to simulate retinal curvature
+            if (state.realisticEffects) {
+                // Create off-screen canvas for distortion effect
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.width * scale;
+                tempCanvas.height = img.height * scale;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // Apply barrel distortion
+                const sourceData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const destData = tempCtx.createImageData(tempCanvas.width, tempCanvas.height);
+                
+                const centerImgX = tempCanvas.width / 2;
+                const centerImgY = tempCanvas.height / 2;
+                const maxRadius = Math.sqrt(centerImgX * centerImgX + centerImgY * centerImgY);
+                const distortionStrength = 0.12; // Subtle curvature
+                
+                for (let y = 0; y < tempCanvas.height; y++) {
+                    for (let x = 0; x < tempCanvas.width; x++) {
+                        const dx = x - centerImgX;
+                        const dy = y - centerImgY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const normalizedDist = distance / maxRadius;
+                        
+                        // Barrel distortion formula
+                        const distortion = 1 + distortionStrength * normalizedDist * normalizedDist;
+                        const srcX = Math.round(centerImgX + dx / distortion);
+                        const srcY = Math.round(centerImgY + dy / distortion);
+                        
+                        if (srcX >= 0 && srcX < tempCanvas.width && srcY >= 0 && srcY < tempCanvas.height) {
+                            const destIdx = (y * tempCanvas.width + x) * 4;
+                            const srcIdx = (srcY * tempCanvas.width + srcX) * 4;
+                            destData.data[destIdx] = sourceData.data[srcIdx];
+                            destData.data[destIdx + 1] = sourceData.data[srcIdx + 1];
+                            destData.data[destIdx + 2] = sourceData.data[srcIdx + 2];
+                            destData.data[destIdx + 3] = sourceData.data[srcIdx + 3];
+                        }
+                    }
+                }
+                
+                tempCtx.putImageData(destData, 0, 0);
+                
+                // Draw distorted image
+                const offsetX = centerX - tempCanvas.width / 2 + panOffsetX;
+                const offsetY = centerY - tempCanvas.height / 2 + panOffsetY;
+                ctx.drawImage(tempCanvas, offsetX, offsetY);
+            } else {
+                // No distortion - simple draw
+                const imgWidth = img.width * scale;
+                const imgHeight = img.height * scale;
+                const offsetX = centerX - imgWidth / 2 + panOffsetX;
+                const offsetY = centerY - imgHeight / 2 + panOffsetY;
+                ctx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
+            }
+            
             ctx.filter = 'none';
             ctx.restore();
             
-            // Add 3D depth effect to vessels and disc
+            // Add realistic depth and lighting effects
             if (state.realisticEffects) {
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
                 ctx.clip();
                 
-                // Create radial gradient overlay for depth - darker at edges, lighter at center
-                // This simulates the curvature of the retina
-                const depthGrad = ctx.createRadialGradient(
-                    centerX - state.viewAngle.x * 0.3, 
-                    centerY - state.viewAngle.y * 0.3, 
-                    fov * 0.2, 
-                    centerX, 
-                    centerY, 
-                    fov * 0.9
-                );
-                depthGrad.addColorStop(0, 'rgba(255, 255, 255, 0.08)'); // Center highlight (convex surface)
-                depthGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
-                depthGrad.addColorStop(1, 'rgba(0, 0, 0, 0.15)'); // Edge shadow
+                // Dynamic lighting based on viewing angle - simulates directed light source
+                const lightAngleX = state.viewAngle.x / 400;
+                const lightAngleY = state.viewAngle.y / 400;
                 
-                ctx.fillStyle = depthGrad;
+                // Create asymmetric lighting gradient that follows pan direction
+                const lightCenterX = centerX - lightAngleX * fov * 0.4;
+                const lightCenterY = centerY - lightAngleY * fov * 0.4;
+                
+                const lightGrad = ctx.createRadialGradient(
+                    lightCenterX, 
+                    lightCenterY, 
+                    fov * 0.15,
+                    centerX,
+                    centerY,
+                    fov
+                );
+                lightGrad.addColorStop(0, 'rgba(255, 255, 230, 0.08)');
+                lightGrad.addColorStop(0.3, 'rgba(0, 0, 0, 0)');
+                lightGrad.addColorStop(0.8, 'rgba(0, 0, 0, 0.12)');
+                lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+                
+                ctx.fillStyle = lightGrad;
                 ctx.fillRect(0, 0, width, height);
                 
-                // Add specular highlight that moves with viewing angle (simulates glossy retinal surface)
-                const specX = centerX + state.viewAngle.x * 0.15 + (state.brightness - 80) * 0.5;
-                const specY = centerY + state.viewAngle.y * 0.15 - fov * 0.2;
-                const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, fov * 0.25);
-                specGrad.addColorStop(0, `rgba(255, 255, 255, ${Math.min(state.brightness / 400, 0.12)})`);
-                specGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0)');
+                // Add directional shadow for depth perception
+                const shadowOffsetX = lightAngleX * fov * 0.3;
+                const shadowOffsetY = lightAngleY * fov * 0.3;
+                
+                const shadowGrad = ctx.createRadialGradient(
+                    centerX + shadowOffsetX,
+                    centerY + shadowOffsetY,
+                    fov * 0.3,
+                    centerX + shadowOffsetX,
+                    centerY + shadowOffsetY,
+                    fov * 0.7
+                );
+                shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0.08)');
+                
+                ctx.fillStyle = shadowGrad;
+                ctx.fillRect(0, 0, width, height);
+                
+                // Specular highlight on curved surface
+                const specX = centerX - lightAngleX * fov * 0.25;
+                const specY = centerY - lightAngleY * fov * 0.25;
+                const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, fov * 0.2);
+                const specIntensity = Math.min(state.brightness / 300, 0.15);
+                specGrad.addColorStop(0, `rgba(255, 255, 240, ${specIntensity})`);
+                specGrad.addColorStop(0.4, `rgba(255, 255, 240, ${specIntensity * 0.3})`);
+                specGrad.addColorStop(1, 'rgba(255, 255, 240, 0)');
                 
                 ctx.fillStyle = specGrad;
                 ctx.beginPath();
-                ctx.arc(specX, specY, fov * 0.25, 0, Math.PI * 2);
+                ctx.arc(specX, specY, fov * 0.2, 0, Math.PI * 2);
                 ctx.fill();
                 
                 ctx.restore();
@@ -483,6 +594,118 @@
         }
 
         // Event Handlers
+        document.getElementById('quizToggle').addEventListener('click', () => {
+            state.quizMode = !state.quizMode;
+            state.currentImageIndex = 0;
+            state.userGuess = null;
+            state.showAnswer = false;
+            
+            if (state.quizMode) {
+                buildQuizImages();
+                document.getElementById('modeName').textContent = 'Quiz Mode';
+                document.getElementById('quizToggle').textContent = 'Study Mode';
+                document.getElementById('studyModePanel').style.display = 'none';
+                document.getElementById('quizModePanel').style.display = 'block';
+                
+                // Populate quiz dropdown
+                const select = document.getElementById('guessSelect');
+                select.innerHTML = '<option value="">-- Select Diagnosis --</option>';
+                allConditions.forEach(cond => {
+                    const option = document.createElement('option');
+                    option.value = cond;
+                    option.textContent = imageLibrary[cond].name;
+                    select.appendChild(option);
+                });
+                
+                updateQuizDisplay();
+            } else {
+                document.getElementById('modeName').textContent = 'Study Mode';
+                document.getElementById('quizToggle').textContent = 'Quiz Mode';
+                document.getElementById('studyModePanel').style.display = 'block';
+                document.getElementById('quizModePanel').style.display = 'none';
+                state.currentImageIndex = 0;
+                updateStudyDisplay();
+            }
+            
+            loadCurrentImage();
+        });
+
+        document.getElementById('guessSelect').addEventListener('change', (e) => {
+            state.userGuess = e.target.value;
+            document.getElementById('submitGuess').disabled = !state.userGuess;
+        });
+
+        document.getElementById('submitGuess').addEventListener('click', () => {
+            if (!state.userGuess) return;
+            
+            const correctAnswer = quizImages[state.currentImageIndex].condition;
+            const isCorrect = state.userGuess === correctAnswer;
+            
+            state.score.total++;
+            if (isCorrect) state.score.correct++;
+            state.showAnswer = true;
+            
+            const answerPanel = document.getElementById('answerPanel');
+            const answerText = document.getElementById('answerText');
+            const correctAnswerText = document.getElementById('correctAnswer');
+            
+            if (isCorrect) {
+                answerPanel.className = 'p-3 rounded mb-3 bg-green-900 border border-green-600';
+                answerText.className = 'font-semibold mb-2 text-green-200';
+                answerText.textContent = '✓ Correct!';
+            } else {
+                answerPanel.className = 'p-3 rounded mb-3 bg-red-900 border border-red-600';
+                answerText.className = 'font-semibold mb-2 text-red-200';
+                answerText.textContent = '✗ Incorrect';
+            }
+            
+            correctAnswerText.className = 'text-sm text-white';
+            correctAnswerText.innerHTML = `<strong>Correct Answer:</strong> ${imageLibrary[correctAnswer].name}<br><span class="text-gray-300">${imageLibrary[correctAnswer].description}</span>`;
+            
+            answerPanel.style.display = 'block';
+            document.getElementById('submitGuess').style.display = 'none';
+            document.getElementById('nextQuestion').style.display = 'block';
+            document.getElementById('guessSelect').disabled = true;
+            document.getElementById('scoreDisplay').textContent = `Score: ${state.score.correct}/${state.score.total}`;
+        });
+
+        document.getElementById('nextQuestion').addEventListener('click', () => {
+            state.currentImageIndex++;
+            if (state.currentImageIndex >= quizImages.length) {
+                // Quiz complete
+                alert(`Quiz Complete!\nFinal Score: ${state.score.correct}/${state.score.total} (${Math.round(state.score.correct/state.score.total*100)}%)`);
+                state.currentImageIndex = 0;
+                state.score = { correct: 0, total: 0 };
+                buildQuizImages(); // Reshuffle
+            }
+            
+            state.userGuess = null;
+            state.showAnswer = false;
+            state.viewAngle = { x: 0, y: 0 };
+            
+            document.getElementById('guessSelect').value = '';
+            document.getElementById('guessSelect').disabled = false;
+            document.getElementById('submitGuess').disabled = true;
+            document.getElementById('submitGuess').style.display = 'block';
+            document.getElementById('nextQuestion').style.display = 'none';
+            document.getElementById('answerPanel').style.display = 'none';
+            
+            updateQuizDisplay();
+            loadCurrentImage();
+        });
+
+        function updateQuizDisplay() {
+            document.getElementById('quizCounter').textContent = `Question ${state.currentImageIndex + 1} / ${quizImages.length}`;
+            document.getElementById('scoreDisplay').textContent = `Score: ${state.score.correct}/${state.score.total}`;
+        }
+
+        function updateStudyDisplay() {
+            const condition = imageLibrary[state.currentCondition];
+            document.getElementById('conditionName').textContent = condition.name;
+            document.getElementById('conditionDesc').textContent = condition.description;
+            document.getElementById('imageCounter').textContent = `Image ${state.currentImageIndex + 1} / ${condition.images.length}`;
+        }
+
         document.getElementById('powerBtn').addEventListener('click', () => {
             state.isOn = !state.isOn;
             const btn = document.getElementById('powerBtn');
@@ -497,16 +720,18 @@
         });
 
         document.getElementById('prevBtn').addEventListener('click', () => {
-            state.currentImageIndex = state.currentImageIndex > 0 ? state.currentImageIndex - 1 : imageUrls.length - 1;
+            const maxIndex = imageLibrary[state.currentCondition].images.length - 1;
+            state.currentImageIndex = state.currentImageIndex > 0 ? state.currentImageIndex - 1 : maxIndex;
             state.viewAngle = { x: 0, y: 0 };
-            document.getElementById('imageCounter').textContent = `Image ${state.currentImageIndex + 1} / ${imageUrls.length}`;
+            updateStudyDisplay();
             loadCurrentImage();
         });
 
         document.getElementById('nextBtn').addEventListener('click', () => {
-            state.currentImageIndex = state.currentImageIndex < imageUrls.length - 1 ? state.currentImageIndex + 1 : 0;
+            const maxIndex = imageLibrary[state.currentCondition].images.length - 1;
+            state.currentImageIndex = state.currentImageIndex < maxIndex ? state.currentImageIndex + 1 : 0;
             state.viewAngle = { x: 0, y: 0 };
-            document.getElementById('imageCounter').textContent = `Image ${state.currentImageIndex + 1} / ${imageUrls.length}`;
+            updateStudyDisplay();
             loadCurrentImage();
         });
 
@@ -549,15 +774,15 @@
 
         document.getElementById('effectsBtn').addEventListener('click', () => {
             state.realisticEffects = !state.realisticEffects;
-            const btn = document.getElementById('effectsBtn');
-            const span = btn.querySelector('span');
+            const span = document.querySelector('#effectsBtn span');
             span.textContent = `Realistic Effects: ${state.realisticEffects ? 'ON' : 'OFF'}`;
             if (!state.realisticEffects) {
                 state.time = 0;
-                state.heartbeatPhase = 0;
                 state.blinkTimer = 0;
             }
-            draw();
+            if (!state.realisticEffects) {
+                draw(); // Redraw immediately when turning off effects
+            }
         });
 
         document.getElementById('infoBtn').addEventListener('click', () => {
@@ -603,8 +828,8 @@
             const currentY = e.clientY - rect.top;
             const deltaX = currentX - state.lastMouse.x;
             const deltaY = currentY - state.lastMouse.y;
-            state.viewAngle.x = Math.max(-800, Math.min(800, state.viewAngle.x + deltaX * 2.0));
-            state.viewAngle.y = Math.max(-800, Math.min(800, state.viewAngle.y + deltaY * 2.0));
+            state.viewAngle.x = Math.max(-300, Math.min(300, state.viewAngle.x + deltaX * 1.2));
+            state.viewAngle.y = Math.max(-300, Math.min(300, state.viewAngle.y + deltaY * 1.2));
             state.lastMouse = { x: currentX, y: currentY };
             draw();
         });
@@ -624,16 +849,19 @@
             document.getElementById('statusText').textContent = text;
         }
 
-        // Initialize and start animation loop
+        // Initialize
+        buildQuizImages();
+        updateStudyDisplay();
+        draw();
+        animate();
+        
+        // Animation loop
         function animate() {
-            if (state.isOn) {
+            if (state.isOn && state.realisticEffects) {
                 draw();
             }
             requestAnimationFrame(animate);
         }
-        
-        draw();
-        animate();
     </script>
 </body>
 </html>
