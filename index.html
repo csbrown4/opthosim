@@ -182,7 +182,11 @@
             imageErrors: {},
             time: 0,
             blinkTimer: 0,
-            isLoading: true
+            isLoading: true,
+            handTremor: { x: 0, y: 0 },
+            pupilSize: 1.0,
+            lastPanSpeed: 0,
+            heartPhase: 0 // For pulsation
         };
 
         let allConditions = [];
@@ -195,6 +199,118 @@
             medium: { size: 120 },
             large: { size: 180 }
         };
+
+        // Audio context for sound effects
+        let audioContext = null;
+        let ambientHumNode = null;
+        let ambientGainNode = null;
+
+        // Initialize audio on first user interaction
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Sound effect functions
+        function playPowerClick() {
+            if (!audioContext) return;
+            
+            const now = audioContext.currentTime;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+            
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            
+            osc.start(now);
+            osc.stop(now + 0.08);
+        }
+
+        function playDiopterClick() {
+            if (!audioContext) return;
+            
+            const now = audioContext.currentTime;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.02);
+            
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+            
+            osc.start(now);
+            osc.stop(now + 0.03);
+        }
+
+        function playApertureClick() {
+            if (!audioContext) return;
+            
+            const now = audioContext.currentTime;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
+            
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            
+            osc.start(now);
+            osc.stop(now + 0.05);
+        }
+
+        function startAmbientHum() {
+            if (!audioContext || ambientHumNode) return;
+            
+            // Create low-frequency hum (like electrical device)
+            ambientHumNode = audioContext.createOscillator();
+            const filterNode = audioContext.createBiquadFilter();
+            ambientGainNode = audioContext.createGain();
+            
+            ambientHumNode.type = 'sine';
+            ambientHumNode.frequency.setValueAtTime(60, audioContext.currentTime); // 60Hz hum
+            
+            filterNode.type = 'lowpass';
+            filterNode.frequency.setValueAtTime(200, audioContext.currentTime);
+            
+            ambientGainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            ambientGainNode.gain.linearRampToValueAtTime(0.02, audioContext.currentTime + 0.5);
+            
+            ambientHumNode.connect(filterNode);
+            filterNode.connect(ambientGainNode);
+            ambientGainNode.connect(audioContext.destination);
+            
+            ambientHumNode.start();
+        }
+
+        function stopAmbientHum() {
+            if (!ambientHumNode) return;
+            
+            ambientGainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+            
+            setTimeout(() => {
+                if (ambientHumNode) {
+                    ambientHumNode.stop();
+                    ambientHumNode = null;
+                    ambientGainNode = null;
+                }
+            }, 400);
+        }
 
         // Initialize - load from GitHub API
         async function init() {
@@ -402,23 +518,48 @@
 
             if (state.realisticEffects) {
                 state.time += 0.016;
+                
+                // Blinking
                 if (Math.random() < 0.004) state.blinkTimer = 0.15;
                 if (state.blinkTimer > 0) state.blinkTimer -= 0.016;
+                
+                // Hand tremor - subtle random shake
+                state.handTremor.x += (Math.random() - 0.5) * 0.3;
+                state.handTremor.y += (Math.random() - 0.5) * 0.3;
+                state.handTremor.x *= 0.85; // Damping
+                state.handTremor.y *= 0.85;
+                
+                // Pupil constriction based on brightness
+                const targetPupil = 1.0 - (state.brightness - 80) / 200;
+                state.pupilSize += (targetPupil - state.pupilSize) * 0.05;
             }
 
-            const fov = calculateFOV();
+            const fov = calculateFOV() * state.pupilSize;
             const focus = calculateFocus();
 
             if (state.distance > 8) {
                 const pupil = Math.min(fov * 0.8, 100);
-                const g1 = ctx.createRadialGradient(cx, cy, pupil * 0.7, cx, cy, pupil);
-                g1.addColorStop(0, 'rgba(255, 100, 60, 0.9)');
-                g1.addColorStop(0.8, 'rgba(220, 50, 30, 0.7)');
+                
+                // Red reflex with more realistic glow
+                const g1 = ctx.createRadialGradient(cx, cy, pupil * 0.5, cx, cy, pupil * 1.2);
+                g1.addColorStop(0, 'rgba(255, 120, 70, 0.95)');
+                g1.addColorStop(0.6, 'rgba(240, 80, 40, 0.8)');
+                g1.addColorStop(0.85, 'rgba(180, 40, 20, 0.5)');
                 g1.addColorStop(1, 'rgba(0, 0, 0, 1)');
                 ctx.fillStyle = g1;
                 ctx.beginPath();
-                ctx.arc(cx, cy, pupil, 0, Math.PI * 2);
+                ctx.arc(cx, cy, pupil * 1.2, 0, Math.PI * 2);
                 ctx.fill();
+                
+                // Add subtle outer glow
+                const g2 = ctx.createRadialGradient(cx, cy, pupil * 1.2, cx, cy, pupil * 1.5);
+                g2.addColorStop(0, 'rgba(255, 60, 30, 0.2)');
+                g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = g2;
+                ctx.beginPath();
+                ctx.arc(cx, cy, pupil * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
                 return;
             }
 
@@ -460,20 +601,82 @@
             ctx.clip();
 
             const blink = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 5, 0.85) : 0;
-            const bright = (state.brightness / 80) * (1 - blink);
+            
+            // Blood vessel pulsation - simulate cardiac cycle at ~70 bpm
+            let pulsation = 1.0;
+            if (state.realisticEffects) {
+                state.heartPhase += 0.016 * 7.33; // ~70 bpm (7.33 rad/sec)
+                // Subtle pulsation: 0.97 to 1.03 (±3% brightness variation)
+                pulsation = 1.0 + Math.sin(state.heartPhase) * 0.03;
+            }
+            
+            const bright = (state.brightness / 80) * (1 - blink) * pulsation;
             const blur = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
-            ctx.filter = blur > 0 ? `brightness(${bright}) blur(${blur}px)` : `brightness(${bright})`;
+            
+            // Add motion blur if panning quickly
+            const motionBlur = state.realisticEffects ? Math.min(state.lastPanSpeed / 20, 2) : 0;
+            const totalBlur = blur + motionBlur;
+            
+            ctx.filter = totalBlur > 0 ? `brightness(${bright}) blur(${totalBlur}px)` : `brightness(${bright})`;
 
             const scale = 0.6;
             const iw = img.width * scale, ih = img.height * scale;
-            const ox = cx - iw/2 - state.viewAngle.x;
-            const oy = cy - ih/2 - state.viewAngle.y;
+            
+            // Apply hand tremor
+            const tremorX = state.realisticEffects ? state.handTremor.x : 0;
+            const tremorY = state.realisticEffects ? state.handTremor.y : 0;
+            
+            const ox = cx - iw/2 - state.viewAngle.x + tremorX;
+            const oy = cy - ih/2 - state.viewAngle.y + tremorY;
             
             ctx.drawImage(img, ox, oy, iw, ih);
             ctx.filter = 'none';
+            
+            // Fundus color shift - warmer at periphery, cooler at center
+            if (state.realisticEffects) {
+                // Calculate distance from center of view
+                const panDist = Math.sqrt(state.viewAngle.x * state.viewAngle.x + state.viewAngle.y * state.viewAngle.y);
+                const maxPanDist = 500; // Maximum realistic pan distance
+                const peripheralness = Math.min(panDist / maxPanDist, 1.0);
+                
+                // Create radial gradient for color temperature shift
+                // Center: slightly cooler (bluer), Periphery: warmer (more orange/red)
+                const colorGrad = ctx.createRadialGradient(cx, cy, fov * 0.3, cx, cy, fov * 0.9);
+                
+                // Subtle effect: center gets slight blue tint, periphery gets orange/red tint
+                const centerTint = `rgba(200, 220, 255, ${0.03 * (1 - peripheralness)})`;
+                const midTint = `rgba(255, 240, 220, ${0.02})`;
+                const edgeTint = `rgba(255, 200, 160, ${0.05 + peripheralness * 0.08})`;
+                
+                colorGrad.addColorStop(0, centerTint);
+                colorGrad.addColorStop(0.5, midTint);
+                colorGrad.addColorStop(1, edgeTint);
+                
+                ctx.fillStyle = colorGrad;
+                ctx.globalCompositeOperation = 'overlay';
+                ctx.fillRect(0, 0, w, h);
+                ctx.globalCompositeOperation = 'source-over';
+            }
+            
             ctx.restore();
 
-            // Vignetting
+            // Enhanced vignetting with red reflex glow at edges when well-focused
+            if (focus > 0.8 && state.realisticEffects) {
+                // Red reflex glow around edges
+                const glowGrad = ctx.createRadialGradient(cx, cy, fov * 0.7, cx, cy, fov);
+                glowGrad.addColorStop(0, 'rgba(255, 80, 40, 0)');
+                glowGrad.addColorStop(0.85, 'rgba(255, 60, 30, 0.08)');
+                glowGrad.addColorStop(1, 'rgba(255, 40, 20, 0.15)');
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, fov, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.fillStyle = glowGrad;
+                ctx.fillRect(0,0,w,h);
+                ctx.restore();
+            }
+            
+            // Standard vignetting
             const vig = ctx.createRadialGradient(cx, cy, fov * 0.6, cx, cy, fov);
             vig.addColorStop(0, 'rgba(0,0,0,0)');
             vig.addColorStop(0.7, 'rgba(0,0,0,0.3)');
@@ -486,6 +689,23 @@
             ctx.fillStyle = vig;
             ctx.fillRect(0,0,w,h);
             ctx.restore();
+            
+            // Corneal reflection - small bright spot that moves opposite to pan
+            if (state.realisticEffects && state.distance <= 6) {
+                const reflectX = cx - state.viewAngle.x * 0.15 + fov * 0.35;
+                const reflectY = cy - state.viewAngle.y * 0.15 - fov * 0.35;
+                const reflectSize = fov * 0.08;
+                
+                const reflectGrad = ctx.createRadialGradient(reflectX, reflectY, 0, reflectX, reflectY, reflectSize);
+                reflectGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+                reflectGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+                reflectGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.fillStyle = reflectGrad;
+                ctx.beginPath();
+                ctx.arc(reflectX, reflectY, reflectSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             if (state.showInfo) {
                 ctx.fillStyle = 'rgba(0,0,0,0.8)';
@@ -516,11 +736,22 @@
 
         // Event handlers
         document.getElementById('powerBtn').addEventListener('click', () => {
+            initAudio(); // Initialize audio on first interaction
+            
             state.isOn = !state.isOn;
             const btn = document.getElementById('powerBtn');
             btn.className = `w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${state.isOn ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white`;
             btn.querySelector('span').textContent = state.isOn ? 'POWER ON' : 'POWER OFF';
             canvas.style.cursor = state.isOn && state.distance <= 8 ? 'move' : 'default';
+            
+            playPowerClick();
+            
+            if (state.isOn) {
+                startAmbientHum();
+            } else {
+                stopAmbientHum();
+            }
+            
             draw();
         });
 
@@ -538,6 +769,12 @@
         document.getElementById('diopter').addEventListener('input', (e) => {
             state.diopter = parseInt(e.target.value);
             document.getElementById('diopterValue').textContent = `${state.diopter > 0 ? '+' : ''}${state.diopter}`;
+            
+            // Play click sound (debounced)
+            if (audioContext && state.isOn) {
+                playDiopterClick();
+            }
+            
             draw();
         });
 
@@ -550,11 +787,15 @@
         document.querySelectorAll('.aperture-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (!state.isOn) return;
+                
                 state.aperture = btn.dataset.aperture;
                 document.querySelectorAll('.aperture-btn').forEach(b => {
                     b.className = 'aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-gray-600 text-gray-300 hover:bg-gray-500';
                 });
                 btn.className = 'aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-blue-600 text-white';
+                
+                playApertureClick();
+                
                 draw();
             });
         });
@@ -731,26 +972,39 @@
             const rect = canvas.getBoundingClientRect();
             const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
             const dx = cx - state.lastMouse.x, dy = cy - state.lastMouse.y;
+            
+            // Track panning speed for motion blur
+            state.lastPanSpeed = Math.sqrt(dx * dx + dy * dy);
+            
             const newX = state.viewAngle.x + dx * 1.5;
             const newY = state.viewAngle.y + dy * 1.5;
             
-            // Circular constraint - limit to radius of 525
-            const dist = Math.sqrt(newX * newX + newY * newY);
-            if (dist <= 525) {
+            // Elliptical constraint - wider horizontal (nasal/temporal), narrower vertical
+            const maxX = 575; // 50 pixels more than before (was 525)
+            const maxY = 475; // 50 pixels less vertically
+            const normalizedDist = (newX * newX) / (maxX * maxX) + (newY * newY) / (maxY * maxY);
+            
+            if (normalizedDist <= 1) {
                 state.viewAngle.x = newX;
                 state.viewAngle.y = newY;
             } else {
-                // Keep on the circle edge
+                // Keep on the ellipse edge
                 const angle = Math.atan2(newY, newX);
-                state.viewAngle.x = Math.cos(angle) * 525;
-                state.viewAngle.y = Math.sin(angle) * 525;
+                state.viewAngle.x = Math.cos(angle) * maxX;
+                state.viewAngle.y = Math.sin(angle) * maxY;
             }
             state.lastMouse = { x: cx, y: cy };
             draw();
         });
 
-        canvas.addEventListener('mouseup', () => state.isDragging = false);
-        canvas.addEventListener('mouseleave', () => state.isDragging = false);
+        canvas.addEventListener('mouseup', () => {
+            state.isDragging = false;
+            state.lastPanSpeed *= 0.5; // Decay speed
+        });
+        canvas.addEventListener('mouseleave', () => {
+            state.isDragging = false;
+            state.lastPanSpeed *= 0.5; // Decay speed
+        });
 
         function animate() {
             if (state.isOn && state.realisticEffects) draw();
