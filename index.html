@@ -89,6 +89,9 @@
             </div>
 
             <div class="space-y-2 mb-4">
+                <button id="quizBtn" class="w-full px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
+                    Quiz Mode
+                </button>
                 <button id="effectsBtn" class="w-full px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition flex items-center justify-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -112,8 +115,28 @@
                 </button>
             </div>
 
-            <div class="p-3 bg-gray-700 rounded-lg text-xs text-gray-300">
-                <div id="statusMessage">Loading image library from GitHub...</div>
+            <div class="p-3 bg-gray-700 rounded-lg">
+                <div id="studyPanel">
+                    <label class="text-white text-sm font-semibold mb-2 block">Condition:</label>
+                    <select id="conditionSelect" class="w-full px-3 py-2 mb-2 bg-gray-600 text-white rounded text-sm">
+                    </select>
+                    <div class="flex gap-2 mb-2">
+                        <button id="prevImg" class="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">◀ Prev</button>
+                        <button id="nextImg" class="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Next ▶</button>
+                    </div>
+                    <div class="text-xs text-gray-300" id="imageInfo">Image 1/10</div>
+                </div>
+                
+                <div id="quizPanel" style="display:none;">
+                    <label class="text-white text-sm font-semibold mb-2 block">Your Diagnosis:</label>
+                    <select id="guessSelect" class="w-full px-3 py-2 mb-2 bg-gray-600 text-white rounded text-sm">
+                        <option value="">-- Select --</option>
+                    </select>
+                    <button id="submitGuess" class="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 mb-2" disabled>Submit</button>
+                    <div id="answerPanel" style="display:none;" class="p-2 rounded mb-2 text-sm"></div>
+                    <button id="nextQuestion" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700" style="display:none;">Next →</button>
+                    <div class="text-xs text-gray-300 text-center" id="quizScore">Score: 0/0</div>
+                </div>
             </div>
         </div>
 
@@ -145,6 +168,10 @@
             viewAngle: { x: 0, y: 0 },
             showInfo: true,
             realisticEffects: true,
+            quizMode: false,
+            userGuess: null,
+            showAnswer: false,
+            score: { correct: 0, total: 0 },
             isDragging: false,
             lastMouse: { x: 0, y: 0 },
             loadedImages: {},
@@ -153,6 +180,9 @@
             blinkTimer: 0,
             isLoading: true
         };
+
+        let allConditions = [];
+        let quizImages = [];
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -185,7 +215,9 @@
                 const conditions = Object.keys(imageLibrary);
                 if (conditions.length > 0) {
                     state.currentCondition = conditions[0];
+                    allConditions = conditions;
                     document.getElementById('statusMessage').textContent = `Loaded ${conditions.length} conditions!`;
+                    updateConditionUI();
                 } else {
                     throw new Error('No images found');
                 }
@@ -201,25 +233,62 @@
                     }
                 };
                 state.currentCondition = 'normal';
+                allConditions = ['normal'];
                 document.getElementById('statusMessage').textContent = 'Using default images';
+                updateConditionUI();
             }
             
             state.isLoading = false;
             loadCurrentImage();
         }
 
-        function loadCurrentImage() {
-            if (!imageLibrary[state.currentCondition]) return;
-            const imgs = imageLibrary[state.currentCondition].images;
-            if (!imgs || imgs.length === 0) return;
-            
-            const url = imgs[state.currentImageIndex];
-            if (state.loadedImages[url] || state.imageErrors[url]) {
-                draw();
-                return;
-            }
+        function updateConditionUI() {
+            const select = document.getElementById('conditionSelect');
+            if (!select) return;
+            select.innerHTML = '';
+            allConditions.forEach(cond => {
+                const opt = document.createElement('option');
+                opt.value = cond;
+                opt.textContent = imageLibrary[cond].name;
+                select.appendChild(opt);
+            });
+            select.value = state.currentCondition;
+        }
 
-            const img = new Image();
+        function buildQuizImages() {
+            quizImages = [];
+            allConditions.forEach(cond => {
+                imageLibrary[cond].images.forEach(url => {
+                    quizImages.push({ url, condition: cond });
+                });
+            });
+            quizImages.sort(() => Math.random() - 0.5);
+        }
+
+        function loadCurrentImage() {
+            if (state.quizMode) {
+                if (!quizImages || quizImages.length === 0) return;
+                const url = quizImages[state.currentImageIndex].url;
+                if (state.loadedImages[url] || state.imageErrors[url]) {
+                    draw();
+                    return;
+                }
+                loadImage(url);
+            } else {
+                if (!imageLibrary[state.currentCondition]) return;
+                const imgs = imageLibrary[state.currentCondition].images;
+                if (!imgs || imgs.length === 0) return;
+                
+                const url = imgs[state.currentImageIndex];
+                if (state.loadedImages[url] || state.imageErrors[url]) {
+                    draw();
+                    return;
+                }
+                loadImage(url);
+            }
+        }
+
+        function loadImage(url) {
             img.crossOrigin = 'anonymous';
             img.onload = () => {
                 state.loadedImages[url] = img;
@@ -291,10 +360,12 @@
             }
 
             if (!imageLibrary[state.currentCondition]) return;
-            const imgs = imageLibrary[state.currentCondition].images;
+            const imgs = state.quizMode ? 
+                (quizImages && quizImages[state.currentImageIndex] ? [quizImages[state.currentImageIndex].url] : []) :
+                imageLibrary[state.currentCondition].images;
             if (!imgs || imgs.length === 0) return;
             
-            const url = imgs[state.currentImageIndex];
+            const url = state.quizMode ? imgs[0] : imgs[state.currentImageIndex];
             const img = state.loadedImages[url];
             
             if (!img) {
@@ -352,7 +423,11 @@
                 ctx.fillText(`Distance: ${state.distance.toFixed(1)} cm`, 20, 50);
                 ctx.fillText(`Diopter: ${state.diopter > 0 ? '+' : ''}${state.diopter}D`, 20, 70);
                 ctx.fillText(`Pan: X=${state.viewAngle.x.toFixed(0)} Y=${state.viewAngle.y.toFixed(0)}`, 20, 90);
-                ctx.fillText(`Condition: ${imageLibrary[state.currentCondition].name}`, 20, 110);
+                if (!state.quizMode) {
+                    ctx.fillText(`${imageLibrary[state.currentCondition].name}`, 20, 110);
+                } else {
+                    ctx.fillText(`Quiz: ${state.currentImageIndex + 1}/${quizImages.length}`, 20, 110);
+                }
             }
 
             if (focus < 0.7) {
@@ -459,8 +534,20 @@
             const rect = canvas.getBoundingClientRect();
             const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
             const dx = cx - state.lastMouse.x, dy = cy - state.lastMouse.y;
-            state.viewAngle.x = Math.max(-450, Math.min(450, state.viewAngle.x + dx * 1.5));
-            state.viewAngle.y = Math.max(-450, Math.min(450, state.viewAngle.y + dy * 1.5));
+            const newX = state.viewAngle.x + dx * 1.5;
+            const newY = state.viewAngle.y + dy * 1.5;
+            
+            // Circular constraint - limit to radius of 525
+            const dist = Math.sqrt(newX * newX + newY * newY);
+            if (dist <= 525) {
+                state.viewAngle.x = newX;
+                state.viewAngle.y = newY;
+            } else {
+                // Keep on the circle edge
+                const angle = Math.atan2(newY, newX);
+                state.viewAngle.x = Math.cos(angle) * 525;
+                state.viewAngle.y = Math.sin(angle) * 525;
+            }
             state.lastMouse = { x: cx, y: cy };
             draw();
         });
