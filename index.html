@@ -327,11 +327,11 @@
             const blurAmount = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
             ctx.filter = blurAmount > 0 ? `brightness(${brightnessValue}) blur(${blurAmount}px)` : `brightness(${brightnessValue})`;
 
-            const scale = 0.8;
+            const scale = 0.6;
             const imgWidth = img.width * scale;
             const imgHeight = img.height * scale;
-            const offsetX = centerX - imgWidth / 2 - state.viewAngle.x * 1.5;
-            const offsetY = centerY - imgHeight / 2 - state.viewAngle.y * 1.5;
+            const offsetX = centerX - imgWidth / 2 - state.viewAngle.x * 1.0;
+            const offsetY = centerY - imgHeight / 2 - state.viewAngle.y * 1.0;
 
             ctx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
             ctx.filter = 'none';
@@ -478,8 +478,8 @@
             const currentY = e.clientY - rect.top;
             const deltaX = currentX - state.lastMouse.x;
             const deltaY = currentY - state.lastMouse.y;
-            state.viewAngle.x = Math.max(-250, Math.min(250, state.viewAngle.x + deltaX * 0.8));
-            state.viewAngle.y = Math.max(-250, Math.min(250, state.viewAngle.y + deltaY * 0.8));
+            state.viewAngle.x = Math.max(-500, Math.min(500, state.viewAngle.x + deltaX * 1.2));
+            state.viewAngle.y = Math.max(-500, Math.min(500, state.viewAngle.y + deltaY * 1.2));
             state.lastMouse = { x: currentX, y: currentY };
             draw();
         });
