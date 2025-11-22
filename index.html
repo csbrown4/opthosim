@@ -885,12 +885,86 @@
         }
 
         // Initialize - load from GitHub first
-        loadImageLibraryFromGitHub().then(() => {
+        async function initializeSimulator() {
+            try {
+                showLoadingMessage('Discovering image folders...');
+                
+                const response = await fetch(GITHUB_API_BASE);
+                if (!response.ok) throw new Error('Failed to fetch repository');
+                
+                const contents = await response.json();
+                const folders = contents.filter(item => item.type === 'dir');
+                
+                if (folders.length === 0) throw new Error('No folders found');
+                
+                showLoadingMessage(`Found ${folders.length} folders. Loading images...`);
+                
+                for (const folder of folders) {
+                    try {
+                        const folderResponse = await fetch(`${GITHUB_API_BASE}/${folder.name}`);
+                        if (!folderResponse.ok) continue;
+                        
+                        const folderContents = await folderResponse.json();
+                        const imageFiles = folderContents.filter(file => 
+                            file.type === 'file' && /\.(jpe?g|png|JPE?G|PNG)$/i.test(file.name)
+                        );
+                        
+                        if (imageFiles.length > 0) {
+                            imageLibrary[folder.name] = {
+                                name: conditionNames[folder.name] || folder.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                                description: conditionDescriptions[folder.name] || `Fundus images showing ${folder.name.replace(/-/g, ' ')}.`,
+                                images: imageFiles.map(file => `${RAW_BASE}/${folder.name}/${file.name}`)
+                            };
+                            console.log(`✓ ${folder.name}: ${imageFiles.length} images`);
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to load ${folder.name}:`, err);
+                    }
+                }
+                
+                allConditions = Object.keys(imageLibrary);
+                
+                if (allConditions.length === 0) throw new Error('No images found');
+                
+                state.currentCondition = allConditions[0];
+                state.isLoadingLibrary = false;
+                
+                console.log(`✓ Loaded ${allConditions.length} conditions`);
+                
+            } catch (error) {
+                console.error('GitHub load failed:', error);
+                // Fallback
+                imageLibrary = {
+                    normal: {
+                        name: 'Normal/Healthy Fundus',
+                        description: 'Healthy retina with clear optic disc, intact blood vessels, and normal macula.',
+                        images: [
+                            `${RAW_BASE}/normal/1ffa9644-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa9647-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa9649-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa964a-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa964b-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa964c-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa9651-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa9652-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa9654-8d87-11e8-9daf-6045cb817f5b..JPG`,
+                            `${RAW_BASE}/normal/1ffa9655-8d87-11e8-9daf-6045cb817f5b..JPG`
+                        ]
+                    }
+                };
+                allConditions = ['normal'];
+                state.currentCondition = 'normal';
+                state.isLoadingLibrary = false;
+            }
+            
+            hideLoadingMessage();
             buildQuizImages();
             updateStudyDisplay();
-            draw();
-        });
+            loadCurrentImage();
+        }
         
+        // Start initialization
+        initializeSimulator();
         animate();
         
         // Animation loop
