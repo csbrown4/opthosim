@@ -124,7 +124,7 @@
                         <button id="prevImg" class="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">◀ Prev</button>
                         <button id="nextImg" class="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Next ▶</button>
                     </div>
-                    <div class="text-xs text-gray-300" id="imageInfo">Image 1/10</div>
+                    <div class="text-xs text-gray-300" id="imageInfo">Image 1/1</div>
                 </div>
                 
                 <div id="quizPanel" style="display:none;">
@@ -195,8 +195,6 @@
         // Initialize - load images from GitHub
         async function init() {
             try {
-                document.getElementById('statusMessage').textContent = 'Loading from GitHub...';
-                
                 const resp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`);
                 const folders = (await resp.json()).filter(i => i.type === 'dir');
                 
@@ -216,7 +214,6 @@
                 if (conditions.length > 0) {
                     state.currentCondition = conditions[0];
                     allConditions = conditions;
-                    document.getElementById('statusMessage').textContent = `Loaded ${conditions.length} conditions!`;
                     updateConditionUI();
                 } else {
                     throw new Error('No images found');
@@ -228,13 +225,12 @@
                     normal: {
                         name: 'Normal',
                         images: Array.from({length: 10}, (_, i) => 
-                            `${RAW_BASE}/normal/1ffa96${String(44+i).padStart(2,'0')}-8d87-11e8-9daf-6045cb817f5b..JPG`
+                            `${RAW_BASE}/normal/1ffa96${String(44+i).padStart(2,'0')}-8d87-11e8-9daf-6045cb817f5b.JPG`
                         ).filter((_, i) => ![2,3,5,6,8,9].includes(i))
                     }
                 };
                 state.currentCondition = 'normal';
                 allConditions = ['normal'];
-                document.getElementById('statusMessage').textContent = 'Using default images';
                 updateConditionUI();
             }
             
@@ -253,6 +249,18 @@
                 select.appendChild(opt);
             });
             select.value = state.currentCondition;
+            
+            // Update image info
+            updateImageInfo();
+        }
+
+        function updateImageInfo() {
+            if (state.quizMode) {
+                document.getElementById('imageInfo').textContent = `Question ${state.currentImageIndex + 1}/${quizImages.length}`;
+            } else {
+                const imgs = imageLibrary[state.currentCondition]?.images || [];
+                document.getElementById('imageInfo').textContent = `Image ${state.currentImageIndex + 1}/${imgs.length}`;
+            }
         }
 
         function buildQuizImages() {
@@ -263,6 +271,16 @@
                 });
             });
             quizImages.sort(() => Math.random() - 0.5);
+            
+            // Update quiz dropdown
+            const guessSelect = document.getElementById('guessSelect');
+            guessSelect.innerHTML = '<option value="">-- Select --</option>';
+            allConditions.forEach(cond => {
+                const opt = document.createElement('option');
+                opt.value = cond;
+                opt.textContent = imageLibrary[cond].name;
+                guessSelect.appendChild(opt);
+            });
         }
 
         function loadCurrentImage() {
@@ -286,9 +304,11 @@
                 }
                 loadImage(url);
             }
+            updateImageInfo();
         }
 
         function loadImage(url) {
+            const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {
                 state.loadedImages[url] = img;
@@ -359,10 +379,9 @@
                 return;
             }
 
-            if (!imageLibrary[state.currentCondition]) return;
             const imgs = state.quizMode ? 
                 (quizImages && quizImages[state.currentImageIndex] ? [quizImages[state.currentImageIndex].url] : []) :
-                imageLibrary[state.currentCondition].images;
+                (imageLibrary[state.currentCondition]?.images || []);
             if (!imgs || imgs.length === 0) return;
             
             const url = state.quizMode ? imgs[0] : imgs[state.currentImageIndex];
@@ -497,7 +516,14 @@
 
         document.getElementById('infoBtn').addEventListener('click', () => {
             state.showInfo = !state.showInfo;
-            document.getElementById('infoBtn').innerHTML = document.getElementById('infoBtn').innerHTML.replace(state.showInfo ? 'Show' : 'Hide', state.showInfo ? 'Hide' : 'Show');
+            const btn = document.getElementById('infoBtn');
+            btn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+                ${state.showInfo ? 'Hide' : 'Show'} Info Overlay
+            `;
             draw();
         });
 
@@ -522,6 +548,122 @@
             draw();
         });
 
+        // Quiz Mode Toggle
+        document.getElementById('quizBtn').addEventListener('click', () => {
+            state.quizMode = !state.quizMode;
+            const quizBtn = document.getElementById('quizBtn');
+            const studyPanel = document.getElementById('studyPanel');
+            const quizPanel = document.getElementById('quizPanel');
+            
+            if (state.quizMode) {
+                buildQuizImages();
+                state.currentImageIndex = 0;
+                state.score = { correct: 0, total: 0 };
+                state.userGuess = null;
+                state.showAnswer = false;
+                
+                quizBtn.textContent = 'Exit Quiz';
+                quizBtn.className = 'w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition';
+                studyPanel.style.display = 'none';
+                quizPanel.style.display = 'block';
+                
+                document.getElementById('guessSelect').value = '';
+                document.getElementById('submitGuess').disabled = true;
+                document.getElementById('answerPanel').style.display = 'none';
+                document.getElementById('nextQuestion').style.display = 'none';
+                document.getElementById('quizScore').textContent = `Score: 0/0`;
+            } else {
+                quizBtn.textContent = 'Quiz Mode';
+                quizBtn.className = 'w-full px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition';
+                studyPanel.style.display = 'block';
+                quizPanel.style.display = 'none';
+                state.currentImageIndex = 0;
+            }
+            
+            loadCurrentImage();
+        });
+
+        // Condition Select
+        document.getElementById('conditionSelect').addEventListener('change', (e) => {
+            state.currentCondition = e.target.value;
+            state.currentImageIndex = 0;
+            state.viewAngle = { x: 0, y: 0 };
+            loadCurrentImage();
+        });
+
+        // Image Navigation
+        document.getElementById('prevImg').addEventListener('click', () => {
+            if (state.quizMode) return;
+            const imgs = imageLibrary[state.currentCondition]?.images || [];
+            if (imgs.length === 0) return;
+            state.currentImageIndex = (state.currentImageIndex - 1 + imgs.length) % imgs.length;
+            state.viewAngle = { x: 0, y: 0 };
+            loadCurrentImage();
+        });
+
+        document.getElementById('nextImg').addEventListener('click', () => {
+            if (state.quizMode) return;
+            const imgs = imageLibrary[state.currentCondition]?.images || [];
+            if (imgs.length === 0) return;
+            state.currentImageIndex = (state.currentImageIndex + 1) % imgs.length;
+            state.viewAngle = { x: 0, y: 0 };
+            loadCurrentImage();
+        });
+
+        // Quiz Interactions
+        document.getElementById('guessSelect').addEventListener('change', (e) => {
+            state.userGuess = e.target.value;
+            document.getElementById('submitGuess').disabled = !state.userGuess;
+        });
+
+        document.getElementById('submitGuess').addEventListener('click', () => {
+            if (!state.userGuess) return;
+            
+            const correctAnswer = quizImages[state.currentImageIndex].condition;
+            const isCorrect = state.userGuess === correctAnswer;
+            
+            state.score.total++;
+            if (isCorrect) state.score.correct++;
+            
+            const answerPanel = document.getElementById('answerPanel');
+            answerPanel.className = `p-2 rounded mb-2 text-sm ${isCorrect ? 'bg-green-600' : 'bg-red-600'}`;
+            answerPanel.innerHTML = isCorrect ? 
+                `<strong>✓ Correct!</strong><br>Diagnosis: ${imageLibrary[correctAnswer].name}` :
+                `<strong>✗ Incorrect</strong><br>Your answer: ${imageLibrary[state.userGuess].name}<br>Correct: ${imageLibrary[correctAnswer].name}`;
+            answerPanel.style.display = 'block';
+            
+            document.getElementById('guessSelect').disabled = true;
+            document.getElementById('submitGuess').style.display = 'none';
+            document.getElementById('nextQuestion').style.display = 'block';
+            document.getElementById('quizScore').textContent = `Score: ${state.score.correct}/${state.score.total}`;
+        });
+
+        document.getElementById('nextQuestion').addEventListener('click', () => {
+            state.currentImageIndex++;
+            
+            if (state.currentImageIndex >= quizImages.length) {
+                const finalScore = ((state.score.correct / state.score.total) * 100).toFixed(1);
+                alert(`Quiz Complete!\n\nFinal Score: ${state.score.correct}/${state.score.total} (${finalScore}%)`);
+                
+                // Reset quiz
+                state.quizMode = false;
+                document.getElementById('quizBtn').click();
+                return;
+            }
+            
+            state.userGuess = null;
+            document.getElementById('guessSelect').value = '';
+            document.getElementById('guessSelect').disabled = false;
+            document.getElementById('submitGuess').disabled = true;
+            document.getElementById('submitGuess').style.display = 'block';
+            document.getElementById('answerPanel').style.display = 'none';
+            document.getElementById('nextQuestion').style.display = 'none';
+            state.viewAngle = { x: 0, y: 0 };
+            
+            loadCurrentImage();
+        });
+
+        // Canvas interactions
         canvas.addEventListener('mousedown', (e) => {
             if (!state.isOn || state.distance > 8) return;
             state.isDragging = true;
