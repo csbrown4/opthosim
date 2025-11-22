@@ -662,6 +662,40 @@
             ctx.drawImage(img, ox, oy, iw, ih);
             ctx.filter = 'none';
             
+            // Unsharp masking for vessel enhancement
+            if (state.realisticEffects && focus > 0.7) {
+                // Get the current image data from the clipped circle
+                const imageData = ctx.getImageData(0, 0, w, h);
+                const data = imageData.data;
+                
+                // Create a subtle sharpening effect
+                // This enhances edges (vessels) while keeping smooth areas smooth
+                const sharpness = 0.3; // Subtle effect
+                
+                // Simple sharpening kernel approach - just enhance existing detail
+                for (let i = 0; i < data.length; i += 4) {
+                    // Slightly increase contrast in mid-tones (where vessels are)
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    // Calculate luminance
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    
+                    // Apply subtle contrast boost to mid-tones (60-180 range where vessels live)
+                    if (lum > 60 && lum < 180) {
+                        const contrastFactor = 1.0 + sharpness * 0.15;
+                        const avgMidtone = 120;
+                        
+                        data[i] = avgMidtone + (r - avgMidtone) * contrastFactor;
+                        data[i + 1] = avgMidtone + (g - avgMidtone) * contrastFactor;
+                        data[i + 2] = avgMidtone + (b - avgMidtone) * contrastFactor;
+                    }
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+            }
+            
             // Choroidal reflex variation - color shifts based on pan angle
             if (state.realisticEffects) {
                 const angle = Math.atan2(state.viewAngle.y, state.viewAngle.x);
@@ -708,25 +742,6 @@
                 ctx.globalCompositeOperation = 'overlay';
                 ctx.fillRect(0, 0, w, h);
                 ctx.globalCompositeOperation = 'source-over';
-            }
-            
-            // Specular highlights on vessels
-            if (state.realisticEffects && focus > 0.8) {
-                // Create subtle bright streaks (simulating light on vessels)
-                const numHighlights = 3;
-                for (let i = 0; i < numHighlights; i++) {
-                    const highlightAngle = (i / numHighlights) * Math.PI * 2 + state.time * 0.1;
-                    const highlightDist = fov * 0.3 + Math.sin(state.time + i) * 20;
-                    const hx = cx + Math.cos(highlightAngle) * highlightDist;
-                    const hy = cy + Math.sin(highlightAngle) * highlightDist;
-                    
-                    const highlightGrad = ctx.createRadialGradient(hx, hy, 0, hx, hy, 15);
-                    highlightGrad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
-                    highlightGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                    
-                    ctx.fillStyle = highlightGrad;
-                    ctx.fillRect(0, 0, w, h);
-                }
             }
             
             ctx.restore();
@@ -1092,9 +1107,9 @@
             const newX = state.viewAngle.x + dx * 1.5;
             const newY = state.viewAngle.y + dy * 1.5;
             
-            // Elliptical constraint - slightly wider horizontal (nasal/temporal)
-            const maxX = 700; // Increased and more balanced
-            const maxY = 650; // Increased to use more of the view
+            // Elliptical constraint - much wider horizontal for nasal/temporal viewing
+            const maxX = 900; // Significantly increased from 700
+            const maxY = 650; // Keep vertical the same
             const normalizedDist = (newX * newX) / (maxX * maxX) + (newY * newY) / (maxY * maxY);
             
             // Only update if within bounds - don't snap to edge
