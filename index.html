@@ -547,6 +547,19 @@
             });
         });
 
+        document.getElementById('effectsBtn').addEventListener('click', () => {
+            state.realisticEffects = !state.realisticEffects;
+            const btn = document.getElementById('effectsBtn');
+            const span = btn.querySelector('span');
+            span.textContent = `Realistic Effects: ${state.realisticEffects ? 'ON' : 'OFF'}`;
+            if (!state.realisticEffects) {
+                state.time = 0;
+                state.heartbeatPhase = 0;
+                state.blinkTimer = 0;
+            }
+            draw();
+        });
+
         document.getElementById('infoBtn').addEventListener('click', () => {
             state.showInfo = !state.showInfo;
             document.getElementById('infoBtn').querySelector('span') ? 
