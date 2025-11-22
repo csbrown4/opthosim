@@ -34,7 +34,6 @@
 </head>
 <body class="bg-gray-900">
     <div id="app" class="h-screen flex">
-        <!-- Control Panel -->
         <div class="w-80 bg-gray-800 p-4 border-r border-gray-700 overflow-y-auto">
             <div class="flex items-center gap-2 mb-6">
                 <svg class="text-blue-400" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,7 +43,6 @@
                 <h1 class="text-xl font-bold text-white">Direct Ophthalmoscope</h1>
             </div>
 
-            <!-- Power Button -->
             <div class="mb-6 p-4 bg-gray-700 rounded-lg">
                 <button id="powerBtn" class="w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -54,75 +52,14 @@
                 </button>
             </div>
 
-            <!-- Image Navigation -->
-            <div class="mb-4 p-4 bg-gray-700 rounded-lg">
-                <div class="flex items-center justify-between mb-3">
-                    <label className="text-white text-sm font-semibold">
-                        Mode: <span id="modeName">Study Mode</span>
-                    </label>
-                    <button id="quizToggle" class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
-                        Quiz Mode
-                    </button>
-                </div>
-                
-                <div id="studyModePanel">
-                    <label class="text-white text-sm font-semibold mb-2 block">
-                        Condition: <span id="conditionName">Normal/Healthy Fundus</span>
-                    </label>
-                    <div class="flex items-center justify-between mb-3">
-                        <button id="prevBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="m15 18-6-6 6-6"/>
-                            </svg>
-                        </button>
-                        <span class="text-white font-mono" id="imageCounter">Image 1 / 10</span>
-                        <button id="nextBtn" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="m9 18 6-6-6-6"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <p class="text-gray-300 text-xs" id="conditionDesc">
-                        Healthy retina with clear optic disc, intact blood vessels, and normal macula. No signs of pathology.
-                    </p>
-                </div>
-                
-                <div id="quizModePanel" style="display: none;">
-                    <div class="mb-3">
-                        <label class="text-white text-sm font-semibold mb-2 block">Your Diagnosis:</label>
-                        <select id="guessSelect" class="w-full px-3 py-2 bg-gray-600 text-white rounded border border-gray-500">
-                            <option value="">-- Select Diagnosis --</option>
-                        </select>
-                    </div>
-                    <button id="submitGuess" class="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold mb-3" disabled>
-                        Submit Answer
-                    </button>
-                    
-                    <div id="answerPanel" style="display: none;" class="p-3 rounded mb-3">
-                        <div id="answerText" class="font-semibold mb-2"></div>
-                        <div id="correctAnswer" class="text-sm"></div>
-                    </div>
-                    
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-white font-mono text-sm" id="quizCounter">Question 1 / 10</span>
-                        <span class="text-white font-mono text-sm" id="scoreDisplay">Score: 0/0</span>
-                    </div>
-                    <button id="nextQuestion" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700" style="display: none;">
-                        Next Question
-                    </button>
-                </div>
-            </div>
-
-            <!-- Distance Control -->
             <div class="mb-4">
                 <label class="text-white text-sm font-semibold mb-2 block">
                     Distance from Eye: <span id="distanceValue">3.0</span> cm
                 </label>
                 <input type="range" id="distance" min="1" max="12" step="0.5" value="3" class="w-full">
-                <div class="text-xs text-gray-400 mt-1" id="distanceHint">Good distance</div>
+                <div class="text-xs text-gray-400 mt-1" id="distanceHint">Optimal distance</div>
             </div>
 
-            <!-- Diopter Wheel -->
             <div class="mb-4">
                 <label class="text-white text-sm font-semibold mb-2 block">
                     Diopter Wheel: <span id="diopterValue">0</span>D
@@ -131,7 +68,6 @@
                 <div class="text-xs text-gray-400 mt-1">Compensate for refractive error & working distance</div>
             </div>
 
-            <!-- Light Intensity -->
             <div class="mb-4">
                 <label class="text-white text-sm font-semibold mb-2 flex items-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -143,7 +79,6 @@
                 <input type="range" id="brightness" min="30" max="120" step="5" value="80" class="w-full">
             </div>
 
-            <!-- Aperture Selection -->
             <div class="mb-4">
                 <label class="text-white text-sm font-semibold mb-2 block">Aperture Selection</label>
                 <div class="grid grid-cols-3 gap-2">
@@ -153,7 +88,6 @@
                 </div>
             </div>
 
-            <!-- Control Buttons -->
             <div class="space-y-2 mb-4">
                 <button id="effectsBtn" class="w-full px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition flex items-center justify-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -178,21 +112,11 @@
                 </button>
             </div>
 
-            <!-- Instructions -->
-            <div class="p-3 bg-gray-700 rounded-lg">
-                <h3 class="text-white font-semibold text-sm mb-2">Instructions:</h3>
-                <ul class="text-gray-300 text-xs space-y-1">
-                    <li>• Turn on power first</li>
-                    <li>• Keep distance at 2-6 cm</li>
-                    <li>• Drag to pan across fundus</li>
-                    <li>• Use arrows to switch images</li>
-                    <li>• Adjust diopter for focus</li>
-                    <li>• Change aperture for field of view</li>
-                </ul>
+            <div class="p-3 bg-gray-700 rounded-lg text-xs text-gray-300">
+                <div id="statusMessage">Loading image library from GitHub...</div>
             </div>
         </div>
 
-        <!-- Canvas Area -->
         <div class="flex-1 flex flex-col items-center justify-center bg-black p-8">
             <canvas id="canvas" width="600" height="600" class="border-4 border-gray-700 rounded-lg cursor-default"></canvas>
             <div class="mt-4 text-gray-400 text-sm text-center max-w-md" id="statusText">
@@ -202,10 +126,18 @@
     </div>
 
     <script>
-        // State
-        const state = {
+        // Configuration
+        const GITHUB_USER = 'csbrown4';
+        const GITHUB_REPO = 'opthosim';
+        const GITHUB_BRANCH = 'main';
+        const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}`;
+        
+        // Global state
+        let imageLibrary = {};
+        let state = {
             isOn: false,
             currentImageIndex: 0,
+            currentCondition: 'normal',
             aperture: 'medium',
             diopter: 0,
             brightness: 80,
@@ -217,50 +149,71 @@
             lastMouse: { x: 0, y: 0 },
             loadedImages: {},
             imageErrors: {},
-            // Animation state
             time: 0,
-            heartbeatPhase: 0,
-            blinkTimer: 0
+            blinkTimer: 0,
+            isLoading: true
         };
 
-        const imageUrls = [
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9644-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9647-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9649-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa964a-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa964b-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa964c-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9651-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9652-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9654-8d87-11e8-9daf-6045cb817f5b..JPG',
-            'https://raw.githubusercontent.com/csbrown4/opthosim/main/normal/1ffa9655-8d87-11e8-9daf-6045cb817f5b..JPG'
-        ];
-
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
         const apertureSettings = {
             small: { size: 80 },
             medium: { size: 120 },
             large: { size: 180 }
         };
 
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-
-        // Load current image
-        function buildQuizImages() {
-            quizImages = [];
-            allConditions.forEach(condition => {
-                if (imageLibrary[condition] && imageLibrary[condition].images) {
-                    imageLibrary[condition].images.forEach(url => {
-                        quizImages.push({ url, condition });
-                    });
+        // Initialize - load images from GitHub
+        async function init() {
+            try {
+                document.getElementById('statusMessage').textContent = 'Loading from GitHub...';
+                
+                const resp = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`);
+                const folders = (await resp.json()).filter(i => i.type === 'dir');
+                
+                for (const folder of folders) {
+                    const fr = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${folder.name}`);
+                    const files = (await fr.json()).filter(f => /\.(jpe?g|png)$/i.test(f.name));
+                    
+                    if (files.length > 0) {
+                        imageLibrary[folder.name] = {
+                            name: folder.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                            images: files.map(f => `${RAW_BASE}/${folder.name}/${f.name}`)
+                        };
+                    }
                 }
-            });
-            // Shuffle images for quiz
-            quizImages.sort(() => Math.random() - 0.5);
+                
+                const conditions = Object.keys(imageLibrary);
+                if (conditions.length > 0) {
+                    state.currentCondition = conditions[0];
+                    document.getElementById('statusMessage').textContent = `Loaded ${conditions.length} conditions!`;
+                } else {
+                    throw new Error('No images found');
+                }
+            } catch (err) {
+                console.error('GitHub load failed:', err);
+                // Fallback
+                imageLibrary = {
+                    normal: {
+                        name: 'Normal',
+                        images: Array.from({length: 10}, (_, i) => 
+                            `${RAW_BASE}/normal/1ffa96${String(44+i).padStart(2,'0')}-8d87-11e8-9daf-6045cb817f5b..JPG`
+                        ).filter((_, i) => ![2,3,5,6,8,9].includes(i))
+                    }
+                };
+                state.currentCondition = 'normal';
+                document.getElementById('statusMessage').textContent = 'Using default images';
+            }
+            
+            state.isLoading = false;
+            loadCurrentImage();
         }
 
         function loadCurrentImage() {
-            const url = imageUrls[state.currentImageIndex];
+            if (!imageLibrary[state.currentCondition]) return;
+            const imgs = imageLibrary[state.currentCondition].images;
+            if (!imgs || imgs.length === 0) return;
+            
+            const url = imgs[state.currentImageIndex];
             if (state.loadedImages[url] || state.imageErrors[url]) {
                 draw();
                 return;
@@ -273,7 +226,6 @@
                 draw();
             };
             img.onerror = () => {
-                console.error('Failed to load:', url);
                 state.imageErrors[url] = true;
                 draw();
             };
@@ -281,492 +233,146 @@
         }
 
         function calculateFOV() {
-            // Realistic: closer distance = smaller field of view (more magnified)
-            // Optimal viewing distance is 2-5cm
-            const baseSize = apertureSettings[state.aperture].size;
-            
-            if (state.distance < 1.5) {
-                // Too close - very restricted view
-                return baseSize * 0.3;
-            } else if (state.distance < 3) {
-                // Optimal close range - good view
-                return baseSize * (0.5 + (state.distance - 1.5) * 0.4);
-            } else if (state.distance <= 6) {
-                // Good working distance - best field of view
-                return baseSize * (1.1 + (state.distance - 3) * 0.1);
-            } else if (state.distance <= 8) {
-                // Getting far - reducing view
-                return baseSize * (1.4 - (state.distance - 6) * 0.2);
-            } else {
-                // Too far - only red reflex
-                return baseSize * 0.8;
-            }
+            const base = apertureSettings[state.aperture].size;
+            const d = state.distance;
+            if (d < 1.5) return base * 0.3;
+            if (d < 3) return base * (0.5 + (d - 1.5) * 0.4);
+            if (d <= 6) return base * (1.1 + (d - 3) * 0.1);
+            if (d <= 8) return base * (1.4 - (d - 6) * 0.2);
+            return base * 0.8;
         }
 
         function calculateFocus() {
-            // Realistic diopter focusing based on distance
-            // At 2.5cm (typical working distance), you need about +40D
-            // Each cm closer needs more plus power, farther needs less
-            
-            const workingDistance = 2.5; // cm - optimal focus point
-            const distanceDiff = state.distance - workingDistance;
-            
-            // Approximate diopter needed: +40D at 2.5cm, adjust ±4D per cm
-            const neededDiopter = -distanceDiff * 4;
-            
-            // Calculate focus error
+            const workingDist = 2.5;
+            const distDiff = state.distance - workingDist;
+            const neededDiopter = -distDiff * 4;
             const focusError = Math.abs(state.diopter - neededDiopter);
             
-            // Sharp focus within ±3D, degrading beyond that
-            if (focusError < 3) {
-                return 1.0;
-            } else if (focusError < 8) {
-                return 1.0 - (focusError - 3) / 10;
-            } else {
-                return Math.max(0.3, 1.0 - focusError / 20);
-            }
+            if (focusError < 3) return 1.0;
+            if (focusError < 8) return 1.0 - (focusError - 3) / 10;
+            return Math.max(0.3, 1.0 - focusError / 20);
         }
 
         function draw() {
-            const width = canvas.width;
-            const height = canvas.height;
-            const centerX = width / 2;
-            const centerY = height / 2;
-
+            const w = canvas.width, h = canvas.height;
+            const cx = w/2, cy = h/2;
+            
             ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, width, height);
-
+            ctx.fillRect(0, 0, w, h);
+            
             if (!state.isOn) {
                 ctx.fillStyle = '#666';
                 ctx.font = '24px Arial';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Ophthalmoscope OFF', centerX, centerY);
-                ctx.font = '16px Arial';
-                ctx.fillText('Turn on the power to begin examination', centerX, centerY + 40);
+                ctx.fillText('Ophthalmoscope OFF', cx, cy);
                 return;
             }
 
-            // Update animation state
             if (state.realisticEffects) {
                 state.time += 0.016;
-                
-                // Random blink every 3-7 seconds
-                if (Math.random() < 0.004) {
-                    state.blinkTimer = 0.15;
-                }
-                if (state.blinkTimer > 0) {
-                    state.blinkTimer -= 0.016;
-                }
+                if (Math.random() < 0.004) state.blinkTimer = 0.15;
+                if (state.blinkTimer > 0) state.blinkTimer -= 0.016;
             }
 
             const fov = calculateFOV();
             const focus = calculateFocus();
 
             if (state.distance > 8) {
-                // Red reflex with pupil effect
-                const pupilSize = Math.min(fov * 0.8, 100);
-                
-                // Outer glow (pupil margin)
-                const outerGlow = ctx.createRadialGradient(centerX, centerY, pupilSize * 0.7, centerX, centerY, pupilSize);
-                outerGlow.addColorStop(0, 'rgba(255, 100, 60, 0.9)');
-                outerGlow.addColorStop(0.8, 'rgba(220, 50, 30, 0.7)');
-                outerGlow.addColorStop(1, 'rgba(0, 0, 0, 1)');
-                
-                ctx.fillStyle = outerGlow;
+                const pupil = Math.min(fov * 0.8, 100);
+                const g1 = ctx.createRadialGradient(cx, cy, pupil * 0.7, cx, cy, pupil);
+                g1.addColorStop(0, 'rgba(255, 100, 60, 0.9)');
+                g1.addColorStop(0.8, 'rgba(220, 50, 30, 0.7)');
+                g1.addColorStop(1, 'rgba(0, 0, 0, 1)');
+                ctx.fillStyle = g1;
                 ctx.beginPath();
-                ctx.arc(centerX, centerY, pupilSize, 0, Math.PI * 2);
+                ctx.arc(cx, cy, pupil, 0, Math.PI * 2);
                 ctx.fill();
-                
-                // Inner red reflex
-                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, pupilSize * 0.6);
-                gradient.addColorStop(0, 'rgba(255, 120, 80, 1)');
-                gradient.addColorStop(0.4, 'rgba(255, 90, 60, 0.9)');
-                gradient.addColorStop(0.8, 'rgba(200, 50, 30, 0.6)');
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, pupilSize * 0.6, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#fff';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Red Reflex - Move closer to see fundus details', centerX, height - 30);
                 return;
             }
 
-            const url = state.quizMode ? 
-                (quizImages && quizImages[state.currentImageIndex] ? quizImages[state.currentImageIndex].url : null) : 
-                (imageLibrary[state.currentCondition] && imageLibrary[state.currentCondition].images ? imageLibrary[state.currentCondition].images[state.currentImageIndex] : null);
+            if (!imageLibrary[state.currentCondition]) return;
+            const imgs = imageLibrary[state.currentCondition].images;
+            if (!imgs || imgs.length === 0) return;
             
-            if (!url) {
-                ctx.fillStyle = '#444444';
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Loading image library...', centerX, centerY);
-                return;
-            }
-            
+            const url = imgs[state.currentImageIndex];
             const img = state.loadedImages[url];
-            const hasError = state.imageErrors[url];
-
-            if (hasError) {
-                ctx.fillStyle = '#664444';
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Failed to load image', centerX, centerY);
-                return;
-            }
-
+            
             if (!img) {
                 ctx.fillStyle = '#444';
                 ctx.beginPath();
-                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+                ctx.arc(cx, cy, fov, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.fillStyle = '#fff';
                 ctx.font = '16px Arial';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Loading fundus image...', centerX, centerY);
+                ctx.fillText('Loading...', cx, cy);
                 return;
             }
 
             ctx.save();
             ctx.beginPath();
-            ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+            ctx.arc(cx, cy, fov, 0, Math.PI * 2);
             ctx.clip();
 
-            // Apply blink darkening
-            const blinkDarkness = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 5, 0.85) : 0;
-
-            const brightnessValue = (state.brightness / 80) * (1 - blinkDarkness);
-            const blurAmount = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
-            ctx.filter = blurAmount > 0 ? `brightness(${brightnessValue}) blur(${blurAmount}px)` : `brightness(${brightnessValue})`;
+            const blink = (state.realisticEffects && state.blinkTimer > 0) ? Math.min(state.blinkTimer * 5, 0.85) : 0;
+            const bright = (state.brightness / 80) * (1 - blink);
+            const blur = focus < 0.9 ? Math.floor((1 - focus) * 8) : 0;
+            ctx.filter = blur > 0 ? `brightness(${bright}) blur(${blur}px)` : `brightness(${bright})`;
 
             const scale = 0.6;
+            const iw = img.width * scale, ih = img.height * scale;
+            const ox = cx - iw/2 - state.viewAngle.x;
+            const oy = cy - ih/2 - state.viewAngle.y;
             
-            // Calculate offset for panning
-            const panOffsetX = -state.viewAngle.x * 1.0;
-            const panOffsetY = -state.viewAngle.y * 1.0;
-            
-            // Apply subtle barrel distortion to simulate retinal curvature
-            if (state.realisticEffects) {
-                // Create off-screen canvas for distortion effect
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = img.width * scale;
-                tempCanvas.height = img.height * scale;
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-                
-                // Apply barrel distortion
-                const sourceData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                const destData = tempCtx.createImageData(tempCanvas.width, tempCanvas.height);
-                
-                const centerImgX = tempCanvas.width / 2;
-                const centerImgY = tempCanvas.height / 2;
-                const maxRadius = Math.sqrt(centerImgX * centerImgX + centerImgY * centerImgY);
-                const distortionStrength = 0.12; // Subtle curvature
-                
-                for (let y = 0; y < tempCanvas.height; y++) {
-                    for (let x = 0; x < tempCanvas.width; x++) {
-                        const dx = x - centerImgX;
-                        const dy = y - centerImgY;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        const normalizedDist = distance / maxRadius;
-                        
-                        // Barrel distortion formula
-                        const distortion = 1 + distortionStrength * normalizedDist * normalizedDist;
-                        const srcX = Math.round(centerImgX + dx / distortion);
-                        const srcY = Math.round(centerImgY + dy / distortion);
-                        
-                        if (srcX >= 0 && srcX < tempCanvas.width && srcY >= 0 && srcY < tempCanvas.height) {
-                            const destIdx = (y * tempCanvas.width + x) * 4;
-                            const srcIdx = (srcY * tempCanvas.width + srcX) * 4;
-                            destData.data[destIdx] = sourceData.data[srcIdx];
-                            destData.data[destIdx + 1] = sourceData.data[srcIdx + 1];
-                            destData.data[destIdx + 2] = sourceData.data[srcIdx + 2];
-                            destData.data[destIdx + 3] = sourceData.data[srcIdx + 3];
-                        }
-                    }
-                }
-                
-                tempCtx.putImageData(destData, 0, 0);
-                
-                // Draw distorted image
-                const offsetX = centerX - tempCanvas.width / 2 + panOffsetX;
-                const offsetY = centerY - tempCanvas.height / 2 + panOffsetY;
-                ctx.drawImage(tempCanvas, offsetX, offsetY);
-            } else {
-                // No distortion - simple draw
-                const imgWidth = img.width * scale;
-                const imgHeight = img.height * scale;
-                const offsetX = centerX - imgWidth / 2 + panOffsetX;
-                const offsetY = centerY - imgHeight / 2 + panOffsetY;
-                ctx.drawImage(img, offsetX, offsetY, imgWidth, imgHeight);
-            }
-            
+            ctx.drawImage(img, ox, oy, iw, ih);
             ctx.filter = 'none';
             ctx.restore();
-            
-            // Add realistic depth and lighting effects
-            if (state.realisticEffects) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
-                ctx.clip();
-                
-                // Dynamic lighting based on viewing angle - simulates directed light source
-                const lightAngleX = state.viewAngle.x / 400;
-                const lightAngleY = state.viewAngle.y / 400;
-                
-                // Create asymmetric lighting gradient that follows pan direction
-                const lightCenterX = centerX - lightAngleX * fov * 0.4;
-                const lightCenterY = centerY - lightAngleY * fov * 0.4;
-                
-                const lightGrad = ctx.createRadialGradient(
-                    lightCenterX, 
-                    lightCenterY, 
-                    fov * 0.15,
-                    centerX,
-                    centerY,
-                    fov
-                );
-                lightGrad.addColorStop(0, 'rgba(255, 255, 230, 0.08)');
-                lightGrad.addColorStop(0.3, 'rgba(0, 0, 0, 0)');
-                lightGrad.addColorStop(0.8, 'rgba(0, 0, 0, 0.12)');
-                lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
-                
-                ctx.fillStyle = lightGrad;
-                ctx.fillRect(0, 0, width, height);
-                
-                // Add directional shadow for depth perception
-                const shadowOffsetX = lightAngleX * fov * 0.3;
-                const shadowOffsetY = lightAngleY * fov * 0.3;
-                
-                const shadowGrad = ctx.createRadialGradient(
-                    centerX + shadowOffsetX,
-                    centerY + shadowOffsetY,
-                    fov * 0.3,
-                    centerX + shadowOffsetX,
-                    centerY + shadowOffsetY,
-                    fov * 0.7
-                );
-                shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0.08)');
-                
-                ctx.fillStyle = shadowGrad;
-                ctx.fillRect(0, 0, width, height);
-                
-                // Specular highlight on curved surface
-                const specX = centerX - lightAngleX * fov * 0.25;
-                const specY = centerY - lightAngleY * fov * 0.25;
-                const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, fov * 0.2);
-                const specIntensity = Math.min(state.brightness / 300, 0.15);
-                specGrad.addColorStop(0, `rgba(255, 255, 240, ${specIntensity})`);
-                specGrad.addColorStop(0.4, `rgba(255, 255, 240, ${specIntensity * 0.3})`);
-                specGrad.addColorStop(1, 'rgba(255, 255, 240, 0)');
-                
-                ctx.fillStyle = specGrad;
-                ctx.beginPath();
-                ctx.arc(specX, specY, fov * 0.2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.restore();
-            }
 
-            const vignetteGrad = ctx.createRadialGradient(centerX, centerY, fov * 0.75, centerX, centerY, fov);
-            vignetteGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            vignetteGrad.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+            // Vignetting
+            const vig = ctx.createRadialGradient(cx, cy, fov * 0.6, cx, cy, fov);
+            vig.addColorStop(0, 'rgba(0,0,0,0)');
+            vig.addColorStop(0.7, 'rgba(0,0,0,0.3)');
+            vig.addColorStop(0.9, 'rgba(0,0,0,0.8)');
+            vig.addColorStop(1, 'rgba(0,0,0,1)');
             ctx.save();
             ctx.beginPath();
-            ctx.arc(centerX, centerY, fov, 0, Math.PI * 2);
+            ctx.arc(cx, cy, fov, 0, Math.PI * 2);
             ctx.clip();
-            ctx.fillStyle = vignetteGrad;
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = vig;
+            ctx.fillRect(0,0,w,h);
             ctx.restore();
 
             if (state.showInfo) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
                 ctx.fillRect(10, 10, 250, 110);
                 ctx.fillStyle = '#fff';
                 ctx.font = '14px monospace';
                 ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
                 ctx.fillText(`Focus: ${focus < 0.7 ? 'Poor' : focus < 0.9 ? 'Fair' : 'Sharp'}`, 20, 30);
                 ctx.fillText(`Distance: ${state.distance.toFixed(1)} cm`, 20, 50);
-                ctx.fillText(`Diopter: ${state.diopter > 0 ? '+' : ''}${state.diopter}`, 20, 70);
+                ctx.fillText(`Diopter: ${state.diopter > 0 ? '+' : ''}${state.diopter}D`, 20, 70);
                 ctx.fillText(`Pan: X=${state.viewAngle.x.toFixed(0)} Y=${state.viewAngle.y.toFixed(0)}`, 20, 90);
-                ctx.fillText(`Field: ${state.aperture}`, 20, 110);
+                ctx.fillText(`Condition: ${imageLibrary[state.currentCondition].name}`, 20, 110);
             }
 
             if (focus < 0.7) {
                 ctx.fillStyle = 'rgba(200, 50, 50, 0.9)';
-                ctx.fillRect(width / 2 - 120, height - 50, 240, 35);
+                ctx.fillRect(w/2 - 120, h - 50, 240, 35);
                 ctx.fillStyle = '#fff';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Adjust diopter wheel for sharp focus', centerX, height - 32);
+                ctx.fillText('Adjust diopter wheel for sharp focus', cx, h - 32);
             }
         }
 
-        // Event Handlers
-        document.getElementById('quizToggle').addEventListener('click', () => {
-            state.quizMode = !state.quizMode;
-            state.currentImageIndex = 0;
-            state.userGuess = null;
-            state.showAnswer = false;
-            
-            if (state.quizMode) {
-                buildQuizImages();
-                document.getElementById('modeName').textContent = 'Quiz Mode';
-                document.getElementById('quizToggle').textContent = 'Study Mode';
-                document.getElementById('studyModePanel').style.display = 'none';
-                document.getElementById('quizModePanel').style.display = 'block';
-                
-                // Populate quiz dropdown
-                const select = document.getElementById('guessSelect');
-                select.innerHTML = '<option value="">-- Select Diagnosis --</option>';
-                allConditions.forEach(cond => {
-                    const option = document.createElement('option');
-                    option.value = cond;
-                    option.textContent = imageLibrary[cond].name;
-                    select.appendChild(option);
-                });
-                
-                updateQuizDisplay();
-            } else {
-                document.getElementById('modeName').textContent = 'Study Mode';
-                document.getElementById('quizToggle').textContent = 'Quiz Mode';
-                document.getElementById('studyModePanel').style.display = 'block';
-                document.getElementById('quizModePanel').style.display = 'none';
-                state.currentImageIndex = 0;
-                updateStudyDisplay();
-            }
-            
-            loadCurrentImage();
-        });
-
-        document.getElementById('guessSelect').addEventListener('change', (e) => {
-            state.userGuess = e.target.value;
-            document.getElementById('submitGuess').disabled = !state.userGuess;
-        });
-
-        document.getElementById('submitGuess').addEventListener('click', () => {
-            if (!state.userGuess) return;
-            
-            const correctAnswer = quizImages[state.currentImageIndex].condition;
-            const isCorrect = state.userGuess === correctAnswer;
-            
-            state.score.total++;
-            if (isCorrect) state.score.correct++;
-            state.showAnswer = true;
-            
-            const answerPanel = document.getElementById('answerPanel');
-            const answerText = document.getElementById('answerText');
-            const correctAnswerText = document.getElementById('correctAnswer');
-            
-            if (isCorrect) {
-                answerPanel.className = 'p-3 rounded mb-3 bg-green-900 border border-green-600';
-                answerText.className = 'font-semibold mb-2 text-green-200';
-                answerText.textContent = '✓ Correct!';
-            } else {
-                answerPanel.className = 'p-3 rounded mb-3 bg-red-900 border border-red-600';
-                answerText.className = 'font-semibold mb-2 text-red-200';
-                answerText.textContent = '✗ Incorrect';
-            }
-            
-            correctAnswerText.className = 'text-sm text-white';
-            correctAnswerText.innerHTML = `<strong>Correct Answer:</strong> ${imageLibrary[correctAnswer].name}<br><span class="text-gray-300">${imageLibrary[correctAnswer].description}</span>`;
-            
-            answerPanel.style.display = 'block';
-            document.getElementById('submitGuess').style.display = 'none';
-            document.getElementById('nextQuestion').style.display = 'block';
-            document.getElementById('guessSelect').disabled = true;
-            document.getElementById('scoreDisplay').textContent = `Score: ${state.score.correct}/${state.score.total}`;
-        });
-
-        document.getElementById('nextQuestion').addEventListener('click', () => {
-            state.currentImageIndex++;
-            if (state.currentImageIndex >= quizImages.length) {
-                // Quiz complete
-                alert(`Quiz Complete!\nFinal Score: ${state.score.correct}/${state.score.total} (${Math.round(state.score.correct/state.score.total*100)}%)`);
-                state.currentImageIndex = 0;
-                state.score = { correct: 0, total: 0 };
-                buildQuizImages(); // Reshuffle
-            }
-            
-            state.userGuess = null;
-            state.showAnswer = false;
-            state.viewAngle = { x: 0, y: 0 };
-            
-            document.getElementById('guessSelect').value = '';
-            document.getElementById('guessSelect').disabled = false;
-            document.getElementById('submitGuess').disabled = true;
-            document.getElementById('submitGuess').style.display = 'block';
-            document.getElementById('nextQuestion').style.display = 'none';
-            document.getElementById('answerPanel').style.display = 'none';
-            
-            updateQuizDisplay();
-            loadCurrentImage();
-        });
-
-        function updateQuizDisplay() {
-            if (!quizImages || quizImages.length === 0) return;
-            document.getElementById('quizCounter').textContent = `Question ${state.currentImageIndex + 1} / ${quizImages.length}`;
-            document.getElementById('scoreDisplay').textContent = `Score: ${state.score.correct}/${state.score.total}`;
-        }
-
-        function updateStudyDisplay() {
-            if (!imageLibrary || !imageLibrary[state.currentCondition]) return;
-            
-            const condition = imageLibrary[state.currentCondition];
-            document.getElementById('conditionName').textContent = condition.name;
-            document.getElementById('conditionDesc').textContent = condition.description;
-            document.getElementById('imageCounter').textContent = `Image ${state.currentImageIndex + 1} / ${condition.images.length}`;
-        }
-
+        // Event handlers
         document.getElementById('powerBtn').addEventListener('click', () => {
             state.isOn = !state.isOn;
             const btn = document.getElementById('powerBtn');
             btn.className = `w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${state.isOn ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white`;
             btn.querySelector('span').textContent = state.isOn ? 'POWER ON' : 'POWER OFF';
             canvas.style.cursor = state.isOn && state.distance <= 8 ? 'move' : 'default';
-            document.getElementById('prevBtn').disabled = !state.isOn;
-            document.getElementById('nextBtn').disabled = !state.isOn;
-            updateStatusText();
-            if (state.isOn) loadCurrentImage();
-            else draw();
-        });
-
-        document.getElementById('prevBtn').addEventListener('click', () => {
-            if (!imageLibrary[state.currentCondition]) return;
-            const maxIndex = imageLibrary[state.currentCondition].images.length - 1;
-            state.currentImageIndex = state.currentImageIndex > 0 ? state.currentImageIndex - 1 : maxIndex;
-            state.viewAngle = { x: 0, y: 0 };
-            updateStudyDisplay();
-            loadCurrentImage();
-        });
-
-        document.getElementById('nextBtn').addEventListener('click', () => {
-            if (!imageLibrary[state.currentCondition]) return;
-            const maxIndex = imageLibrary[state.currentCondition].images.length - 1;
-            state.currentImageIndex = state.currentImageIndex < maxIndex ? state.currentImageIndex + 1 : 0;
-            state.viewAngle = { x: 0, y: 0 };
-            updateStudyDisplay();
-            loadCurrentImage();
+            draw();
         });
 
         document.getElementById('distance').addEventListener('input', (e) => {
@@ -777,14 +383,12 @@
                         state.distance >= 2 && state.distance <= 5 ? 'Optimal distance' : 'Good distance';
             document.getElementById('distanceHint').textContent = hint;
             canvas.style.cursor = state.isOn && state.distance <= 8 ? 'move' : 'default';
-            updateStatusText();
             draw();
         });
 
         document.getElementById('diopter').addEventListener('input', (e) => {
             state.diopter = parseInt(e.target.value);
-            const sign = state.diopter > 0 ? '+' : state.diopter < 0 ? '' : '';
-            document.getElementById('diopterValue').textContent = `${sign}${state.diopter}`;
+            document.getElementById('diopterValue').textContent = `${state.diopter > 0 ? '+' : ''}${state.diopter}`;
             draw();
         });
 
@@ -808,21 +412,16 @@
 
         document.getElementById('effectsBtn').addEventListener('click', () => {
             state.realisticEffects = !state.realisticEffects;
-            const span = document.querySelector('#effectsBtn span');
-            span.textContent = `Realistic Effects: ${state.realisticEffects ? 'ON' : 'OFF'}`;
+            document.querySelector('#effectsBtn span').textContent = `Realistic Effects: ${state.realisticEffects ? 'ON' : 'OFF'}`;
             if (!state.realisticEffects) {
                 state.time = 0;
                 state.blinkTimer = 0;
-            }
-            if (!state.realisticEffects) {
-                draw(); // Redraw immediately when turning off effects
+                draw();
             }
         });
 
         document.getElementById('infoBtn').addEventListener('click', () => {
             state.showInfo = !state.showInfo;
-            document.getElementById('infoBtn').querySelector('span') ? 
-                document.getElementById('infoBtn').querySelector('span').textContent = state.showInfo ? 'Hide Info Overlay' : 'Show Info Overlay' : null;
             document.getElementById('infoBtn').innerHTML = document.getElementById('infoBtn').innerHTML.replace(state.showInfo ? 'Show' : 'Hide', state.showInfo ? 'Hide' : 'Show');
             draw();
         });
@@ -839,7 +438,7 @@
             document.getElementById('distanceValue').textContent = '3.0';
             document.getElementById('diopterValue').textContent = '0';
             document.getElementById('brightnessValue').textContent = '80';
-            document.getElementById('distanceHint').textContent = 'Good distance';
+            document.getElementById('distanceHint').textContent = 'Optimal distance';
             document.querySelectorAll('.aperture-btn').forEach(b => {
                 b.className = b.dataset.aperture === 'medium' ? 
                     'aperture-btn py-2 px-3 rounded text-sm font-medium transition bg-blue-600 text-white' :
@@ -858,122 +457,26 @@
         canvas.addEventListener('mousemove', (e) => {
             if (!state.isDragging) return;
             const rect = canvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
-            const deltaX = currentX - state.lastMouse.x;
-            const deltaY = currentY - state.lastMouse.y;
-            state.viewAngle.x = Math.max(-300, Math.min(300, state.viewAngle.x + deltaX * 1.2));
-            state.viewAngle.y = Math.max(-300, Math.min(300, state.viewAngle.y + deltaY * 1.2));
-            state.lastMouse = { x: currentX, y: currentY };
+            const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+            const dx = cx - state.lastMouse.x, dy = cy - state.lastMouse.y;
+            state.viewAngle.x = Math.max(-300, Math.min(300, state.viewAngle.x + dx * 1.2));
+            state.viewAngle.y = Math.max(-300, Math.min(300, state.viewAngle.y + dy * 1.2));
+            state.lastMouse = { x: cx, y: cy };
             draw();
         });
 
-        canvas.addEventListener('mouseup', () => {
-            state.isDragging = false;
-        });
+        canvas.addEventListener('mouseup', () => state.isDragging = false);
+        canvas.addEventListener('mouseleave', () => state.isDragging = false);
 
-        canvas.addEventListener('mouseleave', () => {
-            state.isDragging = false;
-        });
-
-        function updateStatusText() {
-            const text = !state.isOn ? 'Turn on the ophthalmoscope to begin examination' :
-                        state.isLoadingLibrary ? 'Loading image library from GitHub...' :
-                        state.distance > 8 ? 'Red reflex visible - move closer to see fundus details' :
-                        'Drag to pan • Use arrow buttons to switch between images';
-            document.getElementById('statusText').textContent = text;
-        }
-
-        // Initialize - load from GitHub first
-        async function initializeSimulator() {
-            try {
-                showLoadingMessage('Discovering image folders...');
-                
-                const response = await fetch(GITHUB_API_BASE);
-                if (!response.ok) throw new Error('Failed to fetch repository');
-                
-                const contents = await response.json();
-                const folders = contents.filter(item => item.type === 'dir');
-                
-                if (folders.length === 0) throw new Error('No folders found');
-                
-                showLoadingMessage(`Found ${folders.length} folders. Loading images...`);
-                
-                for (const folder of folders) {
-                    try {
-                        const folderResponse = await fetch(`${GITHUB_API_BASE}/${folder.name}`);
-                        if (!folderResponse.ok) continue;
-                        
-                        const folderContents = await folderResponse.json();
-                        const imageFiles = folderContents.filter(file => 
-                            file.type === 'file' && /\.(jpe?g|png|JPE?G|PNG)$/i.test(file.name)
-                        );
-                        
-                        if (imageFiles.length > 0) {
-                            imageLibrary[folder.name] = {
-                                name: conditionNames[folder.name] || folder.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                                description: conditionDescriptions[folder.name] || `Fundus images showing ${folder.name.replace(/-/g, ' ')}.`,
-                                images: imageFiles.map(file => `${RAW_BASE}/${folder.name}/${file.name}`)
-                            };
-                            console.log(`✓ ${folder.name}: ${imageFiles.length} images`);
-                        }
-                    } catch (err) {
-                        console.warn(`Failed to load ${folder.name}:`, err);
-                    }
-                }
-                
-                allConditions = Object.keys(imageLibrary);
-                
-                if (allConditions.length === 0) throw new Error('No images found');
-                
-                state.currentCondition = allConditions[0];
-                state.isLoadingLibrary = false;
-                
-                console.log(`✓ Loaded ${allConditions.length} conditions`);
-                
-            } catch (error) {
-                console.error('GitHub load failed:', error);
-                // Fallback
-                imageLibrary = {
-                    normal: {
-                        name: 'Normal/Healthy Fundus',
-                        description: 'Healthy retina with clear optic disc, intact blood vessels, and normal macula.',
-                        images: [
-                            `${RAW_BASE}/normal/1ffa9644-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa9647-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa9649-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa964a-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa964b-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa964c-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa9651-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa9652-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa9654-8d87-11e8-9daf-6045cb817f5b..JPG`,
-                            `${RAW_BASE}/normal/1ffa9655-8d87-11e8-9daf-6045cb817f5b..JPG`
-                        ]
-                    }
-                };
-                allConditions = ['normal'];
-                state.currentCondition = 'normal';
-                state.isLoadingLibrary = false;
-            }
-            
-            hideLoadingMessage();
-            buildQuizImages();
-            updateStudyDisplay();
-            loadCurrentImage();
-        }
-        
-        // Start initialization
-        initializeSimulator();
-        animate();
-        
-        // Animation loop
         function animate() {
-            if (state.isOn && state.realisticEffects) {
-                draw();
-            }
+            if (state.isOn && state.realisticEffects) draw();
             requestAnimationFrame(animate);
         }
+
+        // Start
+        init();
+        draw();
+        animate();
     </script>
 </body>
 </html>
